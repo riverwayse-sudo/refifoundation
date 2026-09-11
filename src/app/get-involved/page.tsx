@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { refiImages } from "@/lib/media";
+import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 
 const ways = [
   ["01", "Support", "Help fund practical programmes and the people needed to deliver them responsibly."],
@@ -13,25 +14,57 @@ const ways = [
 export default function GetInvolvedPage() {
   return (
     <main className="refi-page-shell">
+      <SiteHeader />
       <section className="refi-editorial-hero">
-        <div className="refi-editorial-hero-image"><Image src={refiImages.hero.src} alt={refiImages.hero.alt} fill priority sizes="100vw" /><div className="refi-editorial-hero-overlay" /></div>
+        <div className="refi-editorial-hero-image">
+          <Image src={refiImages.hero.src} alt={refiImages.hero.alt} fill priority sizes="100vw" style={{ objectPosition: "center 35%" }} />
+          <div className="refi-editorial-hero-overlay" />
+        </div>
         <div className="refi-container refi-editorial-hero-content">
           <p className="refi-eyebrow">Get involved</p>
           <h1 className="refi-serif">There is more than one way to help build what comes next.</h1>
           <p>Support REFI through funding, partnership, volunteering, expertise or by helping connect the Foundation to communities and opportunities that matter.</p>
         </div>
       </section>
-      <section className="refi-page-content refi-reveal">
+
+      <section className="refi-editorial-points refi-reveal">
         <div className="refi-container">
           <div className="refi-editorial-point-grid">
-            {ways.map(([number, title, text]) => <article className="refi-editorial-point" key={number}><span>{number}</span><h2>{title}</h2><p>{text}</p></article>)}
+            {ways.map(([number, title, text]) => (
+              <article className="refi-editorial-point" key={number}>
+                <span>{number}</span><h2>{title}</h2><p>{text}</p>
+              </article>
+            ))}
           </div>
+
           <div className="refi-involve-banner">
-            <div><p className="refi-eyebrow refi-blue-label">Ready to help?</p><h2 className="refi-serif">Start with a conversation.</h2><p>Tell us what you would like to contribute and where your interest sits. We can explore the right next step together.</p></div>
-            <div className="refi-actions"><Link className="refi-button refi-button-primary" href="/donate">Donate <ArrowRight size={16} /></Link><a className="refi-button refi-button-secondary refi-button-dark" href="mailto:hello@refifoundation.org">Contact REFI</a></div>
+            <div>
+              <p className="refi-eyebrow refi-blue-label">Ready to help?</p>
+              <h2 className="refi-serif">Start with a conversation.</h2>
+              <p>Tell us what you would like to contribute and where your interest sits. We can explore the right next step together.</p>
+            </div>
+            <div className="refi-actions">
+              <Link className="refi-button refi-button-primary" href="/donate">Donate <ArrowRight size={16} /></Link>
+              <a className="refi-button refi-button-secondary refi-button-dark" href="mailto:hello@refifoundation.org">Contact REFI</a>
+            </div>
           </div>
         </div>
       </section>
+
+      <section className="refi-editorial-feature refi-reveal">
+        <div className="refi-container refi-editorial-feature-grid">
+          <div className="refi-editorial-feature-image">
+            <Image src={refiImages.community.src} alt={refiImages.community.alt} fill sizes="(max-width: 800px) 100vw, 50vw" />
+          </div>
+          <div>
+            <p className="refi-eyebrow refi-blue-label">Built around people</p>
+            <h2 className="refi-serif">The strongest support starts with understanding.</h2>
+            <p className="refi-lead refi-lead-small">Whether you give, partner, volunteer or open a door, we want every contribution to connect to a real need and a responsible programme.</p>
+            <Link className="refi-button refi-button-secondary refi-button-dark" href="/our-work">See our work <ArrowRight size={16} /></Link>
+          </div>
+        </div>
+      </section>
+      <SiteFooter />
     </main>
   );
 }
