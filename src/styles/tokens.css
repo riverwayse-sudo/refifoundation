@@ -1,0 +1,98 @@
+:root {
+  /* REFI Foundation — White-first institutional palette */
+  --refi-white: #FFFFFF;
+  --refi-white-soft: #F7F9FC;
+  --refi-white-warm: #FCFCFA;
+
+  /* Blue: institutional identity */
+  --refi-blue-950: #071A3A;
+  --refi-blue-900: #0B2856;
+  --refi-blue-800: #103B78;
+  --refi-blue-700: #1555A3;
+  --refi-blue-600: #1D6FD1;
+  --refi-blue-500: #2F80ED;
+  --refi-blue-200: #BFD9F5;
+  --refi-blue-100: #E7F1FC;
+  --refi-blue-50: #F3F8FE;
+
+  /* Gold: warmth, achievement, evidence */
+  --refi-gold-700: #9A6900;
+  --refi-gold-600: #B8860B;
+  --refi-gold-500: #D4A72C;
+  --refi-gold-400: #E5BF55;
+  --refi-gold-100: #FBF1D2;
+
+  /* Red: action, urgency, selected programme moments */
+  --refi-red-800: #8F1D1D;
+  --refi-red-700: #B42318;
+  --refi-red-600: #D12F2F;
+  --refi-red-500: #E5484D;
+  --refi-red-100: #FCE8E8;
+
+  /* Editorial neutrals */
+  --refi-ink: #172033;
+  --refi-ink-soft: #475467;
+  --refi-muted: #667085;
+  --refi-border: #DDE3EA;
+  --refi-border-strong: #C6CED8;
+
+  /* Semantic surfaces */
+  --refi-surface: var(--refi-white);
+  --refi-surface-subtle: var(--refi-white-soft);
+  --refi-surface-blue: var(--refi-blue-900);
+  --refi-surface-blue-soft: var(--refi-blue-50);
+  --refi-surface-gold: var(--refi-gold-100);
+  --refi-surface-red: var(--refi-red-100);
+
+  /* Semantic content */
+  --refi-text-primary: var(--refi-ink);
+  --refi-text-secondary: var(--refi-ink-soft);
+  --refi-text-muted: var(--refi-muted);
+  --refi-text-on-blue: var(--refi-white);
+  --refi-text-on-dark: var(--refi-white);
+
+  /* Actions */
+  --refi-action-primary: var(--refi-red-700);
+  --refi-action-primary-hover: var(--refi-red-800);
+  --refi-action-secondary: var(--refi-blue-900);
+  --refi-action-secondary-hover: var(--refi-blue-800);
+  --refi-action-accent: var(--refi-gold-600);
+
+  /* Focus / accessibility */
+  --refi-focus: var(--refi-blue-600);
+
+  /* Brand composition guidance — not literal layout percentages */
+  --refi-white-dominance: 70%;
+  --refi-blue-dominance: 30%;
+}
+
+/* Base application primitives */
+html,
+body {
+  background: var(--refi-surface);
+  color: var(--refi-text-primary);
+}
+
+::selection {
+  background: var(--refi-blue-200);
+  color: var(--refi-blue-950);
+}
+
+:focus-visible {
+  outline: 3px solid var(--refi-focus);
+  outline-offset: 3px;
+}
+
+.refi-blue-section {
+  background: var(--refi-surface-blue);
+  color: var(--refi-text-on-blue);
+}
+
+.refi-gold-mark {
+  color: var(--refi-gold-600);
+}
+
+.refi-red-action {
+  background: var(--refi-action-primary);
+  color: var(--refi-white);
+}
