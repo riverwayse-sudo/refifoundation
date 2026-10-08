@@ -1,31 +1,19 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, HeartHandshake } from "lucide-react";
+import { ArrowRight, HeartHandshake, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { refiImages } from "@/lib/media";
 import { SiteFooter, SiteHeader } from "../_components/site-chrome";
+import styles from "../engagement.module.css";
 
-const amounts = [5000, 10000, 25000, 50000, 100000, 250000];
+const amounts=[5000,10000,25000,50000,100000,250000];
 
-export default function DonatePage() {
-  const [amount, setAmount] = useState(25000);
-  const emailHref = `mailto:hello@refifoundation.org?subject=${encodeURIComponent("Donation enquiry")}&body=${encodeURIComponent(`I would like to support REFI Foundation with a donation of ₦${amount.toLocaleString()}. Please share the appropriate payment details and next steps.`)}`;
-  return (
-    <main className="refi-page-shell refi-donate">
-      <SiteHeader />
-      <section className="refi-donate-hero"><div className="refi-container"><p className="refi-eyebrow">Support REFI Foundation</p><h1 className="refi-serif">Give opportunity a place to grow.</h1><p>Your support can help REFI develop practical programmes for children, young people and communities — with dignity, accountability and long-term usefulness at the centre.</p></div></section>
-      <section className="refi-donate-body refi-reveal"><div className="refi-container refi-donate-grid">
-        <div className="refi-donate-panel"><p className="refi-eyebrow refi-blue-label">Make a donation</p><h2>Choose an amount</h2><p>Select a starting amount below. REFI can then provide the appropriate payment details for your gift.</p>
-          <div className="refi-amount-grid" aria-label="Donation amount">{amounts.map((value) => <button key={value} type="button" className={`refi-amount ${amount === value ? "is-selected" : ""}`} onClick={() => setAmount(value)} aria-pressed={amount === value}>₦{value.toLocaleString()}</button>)}</div>
-          <div className="refi-donate-note">Selected donation: <strong>₦{amount.toLocaleString()}</strong><br />For now, donations are coordinated directly with the Foundation. This avoids publishing unverified banking or payment details before the organisation&apos;s giving infrastructure is finalised.</div>
-          <div className="refi-actions" style={{ marginTop: 24 }}><a className="refi-button refi-button-primary" href={emailHref}><HeartHandshake size={17} /> Continue with donation</a></div>
-          <p style={{ fontSize: 13, marginTop: 18 }}>The email will open a donation enquiry addressed to REFI Foundation. No payment information is requested on this page.</p>
-        </div>
-        <div><div className="refi-donate-side-image"><Image src={refiImages.girls.src} alt={refiImages.girls.alt} fill sizes="(max-width: 800px) 100vw, 40vw" /></div><div className="refi-donate-side-copy"><p className="refi-eyebrow refi-blue-label">Why your support matters</p><h2 className="refi-serif">Small acts of support can create practical room for possibility.</h2><p>REFI is building its programme base around education, community support, sport and wellbeing, while maintaining a clear commitment to evidence and responsible reporting.</p><Link href="/our-work" className="refi-button refi-button-secondary refi-button-dark">See our work <ArrowRight size={16} /></Link></div></div>
-      </div></section>
-      <SiteFooter />
-    </main>
-  );
+export default function DonatePage(){
+ const [amount,setAmount]=useState(25000),[email,setEmail]=useState(""),[name,setName]=useState(""),[loading,setLoading]=useState(false),[error,setError]=useState("");
+ async function pay(e:React.FormEvent){
+  e.preventDefault();setError("");
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setError("Please enter a valid email address.");return}
+  setLoading(true);
+  try{const res=await fetch("/api/paystack/initialize",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,name,amount,source:"donate"})});const data=await res.json();if(!res.ok)throw new Error(data.error||"Unable to start payment.");window.location.href=data.authorizationUrl}catch(err){setError(err instanceof Error?err.message:"Unable to start payment.");setLoading(false)}
+ }
+ return <main className={styles.shell}><SiteHeader/><section className={styles.hero}><div className={styles.heroInner}><div className={styles.eyebrow}>REFI · Give</div><h1>Give opportunity a place to grow.</h1><p>Make a secure donation through Paystack. Choose an amount, enter your email and continue to Paystack's hosted checkout.</p></div></section><section className={styles.body}><div className={styles.container}><div className={styles.grid2}><div className={styles.card}><div className={styles.eyebrow} style={{color:"var(--refi-blue-700)"}}>Make a donation</div><h2 style={{fontSize:36}}>Choose your support.</h2><p>Select an amount. You can change it before continuing.</p><div className={styles.amounts}>{amounts.map(v=><button key={v} type="button" className={amount===v?styles.amount+" "+styles.amountSelected:styles.amount} onClick={()=>setAmount(v)}>₦{v.toLocaleString()}</button>)}</div><form className={styles.form} onSubmit={pay}><label className={styles.label}>Full name<input className={styles.input} value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" autoComplete="name"/></label><label className={styles.label}>Email address<input className={styles.input} value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" type="email" autoComplete="email" required/></label>{error&&<div role="alert" className={styles.note}>{error}</div>}<button className={styles.primary} disabled={loading}>{loading?"Connecting to Paystack…":"Donate ₦"+amount.toLocaleString()} <ArrowRight size={16}/></button></form><div className={styles.note} style={{marginTop:18}}><ShieldCheck size={18} style={{verticalAlign:"middle",marginRight:8}}/>Your card or bank details are entered on Paystack's secure checkout, not stored by this page.</div></div><div><div className={styles.card}><div className={styles.eyebrow} style={{color:"var(--refi-blue-700)"}}>Give with confidence</div><h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:44,lineHeight:1.04}}>Payment should be simple. Reporting should be clear.</h2><p>Successful payments will be verified server-side before they can be counted as donations. Refi will use the payment reference to reconcile gifts.</p><Link className={styles.cardAction} href="/impact">See our impact approach <ArrowRight size={16}/></Link></div><div className={styles.card} style={{marginTop:18}}><HeartHandshake size={26}/><h3>Prefer to start by playing?</h3><p>Try the Refi Challenge first, then decide whether you'd like to support the Foundation.</p><Link className={styles.primary} href="/play">Play for Impact <ArrowRight size={16}/></Link></div></div></div></div></section><SiteFooter/></main>
 }
