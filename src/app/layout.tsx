@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "../styles/tokens.css";
 import "./globals.css";
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://therefifoundation.org").replace(/\/+$/, "");
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.refifoundation.com").replace(/\/+$/, "");
 const siteDescription =
   "REFI Foundation supports practical opportunities for children, young people and communities through education, sport, wellbeing and community-led action.";
 
