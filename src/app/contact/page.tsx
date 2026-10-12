@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 
