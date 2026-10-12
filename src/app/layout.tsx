@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "../styles/tokens.css";
 import "./globals.css";
 
-const siteUrl = "https://refifoundation.vercel.app";
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.refifoundation.com").replace(/\/+$/, "");
+const siteDescription =
+  "REFI Foundation supports practical opportunities for children, young people and communities through education, sport, wellbeing and community-led action.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -10,29 +12,21 @@ export const metadata: Metadata = {
     default: "REFI Foundation | Building opportunity, strengthening communities",
     template: "%s | REFI Foundation",
   },
-  description:
-    "REFI Foundation supports practical opportunities for children, young people and communities across Africa.",
-  alternates: {
-    canonical: "/",
-  },
+  description: siteDescription,
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: siteUrl,
     siteName: "REFI Foundation",
     title: "REFI Foundation | Building opportunity, strengthening communities",
-    description:
-      "Practical opportunities for children, young people and communities across Africa.",
+    description: siteDescription,
   },
   twitter: {
     card: "summary_large_image",
     title: "REFI Foundation | Building opportunity, strengthening communities",
-    description:
-      "Practical opportunities for children, young people and communities across Africa.",
+    description: siteDescription,
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
