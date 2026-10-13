@@ -251,3 +251,24 @@ img { max-width: 100%; }
   .refi-match-scoreline > strong { font-size: 21px; }
   .refi-match-meta { align-items: start; flex-direction: column; gap: 7px; }
 }
+
+.refi-cms-stories { padding: 70px 0 100px; }
+.refi-cms-story-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.refi-cms-story-card { min-width: 0; border: 1px solid var(--refi-border); background: white; }
+.refi-cms-story-card > img { display: block; width: 100%; height: 220px; object-fit: cover; background: var(--refi-blue-50); }
+.refi-cms-story-card-body { padding: 24px; }
+.refi-cms-story-card-body > span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--refi-blue-700); }
+.refi-cms-story-card h2 { font-size: 25px; line-height: 1.12; margin: 14px 0 10px; }
+.refi-cms-story-card p { color: var(--refi-ink-soft); }
+.refi-cms-story-card a { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; color: var(--refi-blue-800); font-weight: 700; }
+.refi-story-detail { padding: 150px 20px 100px; }
+.refi-story-detail-head { width: min(820px, 100%); margin: 0 auto 40px; }
+.refi-story-detail-head h1 { font-size: clamp(42px, 6vw, 72px); line-height: 1.02; margin: 16px 0; }
+.refi-story-detail-head > p:not(.refi-eyebrow) { font-size: 20px; color: var(--refi-ink-soft); }
+.refi-story-detail-head time { color: var(--refi-muted); font-size: 13px; }
+.refi-story-detail-image { position: relative; width: min(1000px, 100%); height: clamp(260px, 50vw, 560px); margin: 0 auto 50px; background: var(--refi-blue-50); }
+.refi-story-detail-body { width: min(760px, 100%); margin: 0 auto; font-size: 18px; line-height: 1.8; color: var(--refi-ink-soft); }
+.refi-story-detail-body h2, .refi-story-detail-body h3 { color: var(--refi-ink); line-height: 1.2; }
+.refi-story-detail-body img { max-width: 100%; height: auto; }
+@media (max-width: 900px) { .refi-cms-story-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .refi-cms-story-grid { grid-template-columns: 1fr; } .refi-cms-story-card > img { height: 230px; } }
