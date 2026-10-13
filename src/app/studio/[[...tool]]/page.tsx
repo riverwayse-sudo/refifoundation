@@ -1,4 +1,4 @@
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-static";
 
-const StudioClient = dynamic(() => import("./studio-client"), { ssr: false });
+const StudioClient = nextDynamic(() => import("./studio-client"), { ssr: false });
 
 export default function StudioPage() {
   const configured = Boolean(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID && process.env.NEXT_PUBLIC_SANITY_DATASET);
