@@ -12,7 +12,10 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest"
+    "lucide-react": "latest",
+    "next-sanity": "latest",
+    "sanity": "latest",
+    "styled-components": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
