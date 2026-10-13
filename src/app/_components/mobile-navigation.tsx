@@ -8,6 +8,7 @@ const links = [
   { href: "/about", label: "About" },
   { href: "/our-work", label: "Our Work" },
   { href: "/impact", label: "Impact" },
+  { href: "/matches", label: "Live Matches" },
   { href: "/stories", label: "Stories" },
   { href: "/get-involved", label: "Get Involved" },
   { href: "/contact", label: "Contact" },
