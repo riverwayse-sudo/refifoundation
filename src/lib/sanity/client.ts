@@ -133,3 +133,31 @@ export async function getVerifiedImpactMetrics(): Promise<VerifiedImpactMetric[]
     return [];
   }
 }
+
+export type HomeSettings = {
+  heroEyebrow?: string;
+  heroTitle?: string;
+  heroDescription?: string;
+  primaryCtaLabel?: string;
+  primaryCtaUrl?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaUrl?: string;
+  introHeading?: string;
+  introBody?: string;
+};
+
+export async function getHomeSettings(): Promise<HomeSettings | null> {
+  if (!sanityClient) return null;
+  try {
+    return await sanityClient.fetch<HomeSettings | null>(
+      `*[_type == "siteSettings"] | order(_updatedAt desc)[0] {
+        heroEyebrow, heroTitle, heroDescription, primaryCtaLabel, primaryCtaUrl,
+        secondaryCtaLabel, secondaryCtaUrl, introHeading, introBody
+      }`,
+      {},
+      { next: { revalidate: 60 } },
+    );
+  } catch {
+    return null;
+  }
+}
