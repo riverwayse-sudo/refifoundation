@@ -10,6 +10,7 @@ export function SiteHeader() {
           <Link href="/about">About</Link>
           <Link href="/our-work">Our Work</Link>
           <Link href="/impact">Impact</Link>
+          <Link href="/events">Events</Link>
           <Link href="/matches">Live Matches</Link>
           <Link href="/stories">Stories</Link>
           <Link href="/get-involved">Get Involved</Link>
