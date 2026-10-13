@@ -85,4 +85,23 @@ export const matchFeature = defineType({
   ],
 });
 
-export const schemaTypes = [sitePage, story, project, event, impactMetric, matchFeature];
+
+export const siteSettings = defineType({
+  name: "siteSettings", title: "Homepage & site settings", type: "document",
+  fields: [
+    defineField({ name: "title", title: "Internal document name", type: "string", initialValue: "REFI website settings", validation: (rule) => rule.required() }),
+    defineField({ name: "heroEyebrow", title: "Homepage eyebrow", type: "string" }),
+    defineField({ name: "heroTitle", title: "Homepage headline", type: "string", validation: (rule) => rule.max(120) }),
+    defineField({ name: "heroDescription", title: "Homepage introduction", type: "text", rows: 3, validation: (rule) => rule.max(320) }),
+    defineField({ name: "primaryCtaLabel", title: "Primary button label", type: "string" }),
+    defineField({ name: "primaryCtaUrl", title: "Primary button URL", type: "string" }),
+    defineField({ name: "secondaryCtaLabel", title: "Secondary button label", type: "string" }),
+    defineField({ name: "secondaryCtaUrl", title: "Secondary button URL", type: "string" }),
+    defineField({ name: "heroImage", title: "Homepage hero image", type: "image", options: { hotspot: true } }),
+    defineField({ name: "introHeading", title: "Introduction heading", type: "string" }),
+    defineField({ name: "introBody", title: "Introduction copy", type: "text", rows: 4 }),
+    defineField({ name: "updatedAt", title: "Last reviewed", type: "datetime" }),
+  ],
+});
+
+export const schemaTypes = [siteSettings, sitePage, story, project, event, impactMetric, matchFeature];
