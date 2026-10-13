@@ -4,15 +4,28 @@ import type { LiveMatch, MatchStatus } from "@/lib/football/types";
 export const runtime = "nodejs";
 export const revalidate = 30;
 
+// API-Football league IDs: Premier League = 39, UEFA Champions League = 2.
+// Nigerian competitions are selected by country and league type because the
+// provider may add/change Nigerian league IDs across seasons.
+const EPL_LEAGUE_ID = 39;
+const UCL_LEAGUE_ID = 2;
+
 type ApiFixture = {
   fixture?: { id?: number; date?: string; status?: { short?: string; long?: string; elapsed?: number | null } };
-  league?: { name?: string; country?: string };
+  league?: { id?: number; name?: string; country?: string; type?: string };
   teams?: { home?: { id?: number; name?: string; logo?: string }; away?: { id?: number; name?: string; logo?: string } };
   goals?: { home?: number | null; away?: number | null };
 };
 
 const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "LIVE", "INT"]);
-const VALID_CODES = new Set(["1H", "HT", "2H", "ET", "P", "LIVE", "INT", "FT", "AET", "PEN", "NS", "TBD", "PST", "CANC", "ABD", "AWD", "WO"]);
+
+function isInScope(item: ApiFixture): boolean {
+  const league = item.league;
+  if (!league) return false;
+  if (league.id === EPL_LEAGUE_ID || league.id === UCL_LEAGUE_ID) return true;
+  return league.country?.trim().toLowerCase() === "nigeria"
+    && (league.type?.trim().toLowerCase() === "league" || !league.type);
+}
 
 function mapFixture(item: ApiFixture): LiveMatch | null {
   const fixtureId = item.fixture?.id;
@@ -60,7 +73,7 @@ export async function GET() {
     if (payload.errors && Object.keys(payload.errors as object).length > 0) {
       return NextResponse.json({ configured: true, matches: [], message: "The live-score provider returned an API error." }, { status: 502, headers: { "Cache-Control": "no-store" } });
     }
-    const matches = (payload.response || []).map(mapFixture).filter((match): match is LiveMatch => match !== null);
+    const matches = (payload.response || []).filter(isInScope).map(mapFixture).filter((match): match is LiveMatch => match !== null);
     return NextResponse.json({ configured: true, matches, updatedAt: new Date().toISOString() }, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } });
   } catch {
     return NextResponse.json({ configured: true, matches: [], message: "Unable to retrieve live scores right now." }, { status: 502, headers: { "Cache-Control": "no-store" } });
