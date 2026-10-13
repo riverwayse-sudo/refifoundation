@@ -56,3 +56,80 @@ export async function getPublishedStory(slug: string): Promise<PublishedStory | 
     return null;
   }
 }
+
+export type PublishedProject = {
+  _id: string;
+  title: string;
+  slug: string;
+  summary: string;
+  focusArea?: string;
+  status?: string;
+  coverImageUrl?: string;
+};
+
+export type PublishedEvent = {
+  _id: string;
+  title: string;
+  slug: string;
+  startsAt: string;
+  endsAt?: string;
+  location?: string;
+  summary?: string;
+  registrationUrl?: string;
+  coverImageUrl?: string;
+};
+
+export type VerifiedImpactMetric = {
+  _id: string;
+  label: string;
+  value: string;
+  context?: string;
+  sortOrder?: number;
+};
+
+export async function getPublishedProjects(): Promise<PublishedProject[]> {
+  if (!sanityClient) return [];
+  try {
+    return await sanityClient.fetch<PublishedProject[]>(
+      `*[_type == "project" && defined(slug.current)] | order(isFeatured desc, title asc) {
+        _id, title, "slug": slug.current, summary, focusArea, status,
+        "coverImageUrl": coverImage.asset->url
+      }`,
+      {},
+      { next: { revalidate: 60 } },
+    );
+  } catch {
+    return [];
+  }
+}
+
+export async function getPublishedEvents(): Promise<PublishedEvent[]> {
+  if (!sanityClient) return [];
+  try {
+    return await sanityClient.fetch<PublishedEvent[]>(
+      `*[_type == "event" && status == "Published" && startsAt >= now()] | order(startsAt asc) {
+        _id, title, "slug": slug.current, startsAt, endsAt, location, summary, registrationUrl,
+        "coverImageUrl": coverImage.asset->url
+      }`,
+      {},
+      { next: { revalidate: 60 } },
+    );
+  } catch {
+    return [];
+  }
+}
+
+export async function getVerifiedImpactMetrics(): Promise<VerifiedImpactMetric[]> {
+  if (!sanityClient) return [];
+  try {
+    return await sanityClient.fetch<VerifiedImpactMetric[]>(
+      `*[_type == "impactMetric" && verified == true] | order(sortOrder asc) {
+        _id, label, value, context, sortOrder
+      }`,
+      {},
+      { next: { revalidate: 60 } },
+    );
+  } catch {
+    return [];
+  }
+}
