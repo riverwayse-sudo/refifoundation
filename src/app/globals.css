@@ -272,3 +272,23 @@ img { max-width: 100%; }
 .refi-story-detail-body img { max-width: 100%; height: auto; }
 @media (max-width: 900px) { .refi-cms-story-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .refi-cms-story-grid { grid-template-columns: 1fr; } .refi-cms-story-card > img { height: 230px; } }
+
+/* CMS-managed homepage stories, projects, events and verified impact */
+.refi-home-cms-stories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 28px; }
+.refi-home-cms-stories article { padding: 28px; background: white; color: var(--refi-ink); border: 1px solid var(--refi-border); border-top: 3px solid var(--refi-gold-500); }
+.refi-home-cms-stories article > span { color: var(--refi-blue-700); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; font-weight: 700; }
+.refi-home-cms-stories h3 { margin: 14px 0 10px; font-size: clamp(20px, 2.4vw, 28px); line-height: 1.15; }
+.refi-home-cms-stories p { color: var(--refi-ink-soft); }
+.refi-home-cms-stories a { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--refi-blue-700); font-weight: 700; }
+.refi-impact-metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.refi-impact-metric-card { min-height: 210px; padding: 28px; background: white; border: 1px solid var(--refi-border); border-top: 3px solid var(--refi-gold-500); }
+.refi-impact-metric-card > strong { display: block; color: var(--refi-blue-800); font-size: clamp(32px, 4vw, 48px); line-height: 1; letter-spacing: -.04em; }
+.refi-impact-metric-card h2 { margin: 18px 0 8px; font-size: 20px; line-height: 1.2; }
+.refi-impact-metric-card p, .refi-impact-disclaimer { color: var(--refi-ink-soft); }
+.refi-impact-disclaimer { font-size: 12px; margin-top: 20px; }
+.refi-events-hero { min-height: 460px; background: var(--refi-blue-950); color: white; }
+.refi-events-hero .refi-editorial-hero-content { padding-top: 160px; padding-bottom: 70px; }
+.refi-events-hero .refi-editorial-hero-content h1 { font-size: clamp(42px, 6vw, 72px); line-height: 1.04; max-width: 850px; }
+.refi-events-hero .refi-editorial-hero-content > p:last-child { color: rgba(255,255,255,.82); max-width: 660px; font-size: 18px; }
+.refi-cms-story-card-body a { color: var(--refi-blue-800); font-weight: 700; }
+@media (max-width: 760px) { .refi-home-cms-stories, .refi-impact-metric-grid { grid-template-columns: 1fr; } }
