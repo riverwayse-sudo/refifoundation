@@ -1,5 +1,5 @@
-import nextDynamic from "next/dynamic";
 import type { Metadata } from "next";
+import StudioClient from "./studio-client";
 
 export const metadata: Metadata = {
   title: "REFI Content Studio",
@@ -7,8 +7,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-static";
-
-const StudioClient = nextDynamic(() => import("./studio-client"), { ssr: false });
 
 export default function StudioPage() {
   const configured = Boolean(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID && process.env.NEXT_PUBLIC_SANITY_DATASET);
