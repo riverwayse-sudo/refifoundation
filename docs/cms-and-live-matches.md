@@ -19,7 +19,7 @@
 
 ## Important limitations in this first foundation
 
-- Published Stories & News now reads published story documents from Sanity and has dynamic story detail pages. If the CMS is not configured or no stories are published, the existing editorial fallback remains visible. Homepage, projects, events, and impact statistics still need their public-page integrations.
+- Published Stories & News now reads published story documents from Sanity and has dynamic story detail pages. If the CMS is not configured or no stories are published, the existing editorial fallback remains visible. Homepage hero/introduction settings, featured work cards, published stories, projects, events, and verified impact metrics now have public-page integrations. Homepage imagery, all About/Get Involved page copy, and page-level body content are not yet CMS-driven.
 - The live-match UI and provider adapter are ready for configuration, but actual live scores will not be available until a provider key is configured and its coverage is confirmed.
 - Featured match documents are editorial metadata only at this stage; the match API does not yet filter the feed using those documents.
 - Impact metrics include a verification flag to discourage publishing unverified claims.
