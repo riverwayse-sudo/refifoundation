@@ -292,3 +292,9 @@ img { max-width: 100%; }
 .refi-events-hero .refi-editorial-hero-content > p:last-child { color: rgba(255,255,255,.82); max-width: 660px; font-size: 18px; }
 .refi-cms-story-card-body a { color: var(--refi-blue-800); font-weight: 700; }
 @media (max-width: 760px) { .refi-home-cms-stories, .refi-impact-metric-grid { grid-template-columns: 1fr; } }
+
+.refi-cms-page-image-fallback { position: absolute; inset: 0; background: linear-gradient(135deg, var(--refi-blue-950), var(--refi-blue-700)); }
+.refi-cms-page-body { width: min(820px, calc(100% - 40px)); margin: 0 auto; padding: 70px 0 100px; color: var(--refi-ink-soft); font-size: 18px; line-height: 1.8; }
+.refi-cms-page-body h2, .refi-cms-page-body h3 { color: var(--refi-ink); line-height: 1.2; margin-top: 1.8em; }
+.refi-cms-page-body img { max-width: 100%; height: auto; }
+.refi-cms-page-body a { color: var(--refi-blue-700); text-decoration: underline; text-underline-offset: 3px; }
