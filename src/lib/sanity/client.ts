@@ -161,3 +161,32 @@ export async function getHomeSettings(): Promise<HomeSettings | null> {
     return null;
   }
 }
+
+export type PublishedPage = {
+  _id: string;
+  title: string;
+  slug: string;
+  summary?: string;
+  heroImageUrl?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  publishedAt?: string;
+  body?: unknown[];
+};
+
+export async function getPublishedPage(slug: string): Promise<PublishedPage | null> {
+  if (!sanityClient) return null;
+  try {
+    return await sanityClient.fetch<PublishedPage | null>(
+      `*[_type == "sitePage" && slug.current == $slug && defined(publishedAt) && publishedAt <= now()][0] {
+        _id, title, "slug": slug.current, summary, seoTitle, seoDescription, publishedAt,
+        "heroImageUrl": heroImage.asset->url,
+        body
+      }`,
+      { slug },
+      { next: { revalidate: 60 } },
+    );
+  } catch {
+    return null;
+  }
+}
