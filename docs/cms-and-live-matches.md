@@ -38,7 +38,7 @@ The adapter filters the provider's live fixture feed on the server before return
 
 ## Important limitations in this first foundation
 
-- Published Stories & News now reads published story documents from Sanity and has dynamic story detail pages. If the CMS is not configured or no stories are published, the existing editorial fallback remains visible. Homepage hero/introduction settings, featured work cards, published stories, projects, events, and verified impact metrics now have public-page integrations. Homepage imagery, all About/Get Involved page copy, and page-level body content are not yet CMS-driven.
+- Published Stories & News reads published story documents from Sanity and has dynamic story detail pages. Homepage headline, introduction, calls to action, and hero image are editable through Homepage & site settings. Projects/programmes, upcoming events, and verified impact metrics feed their public sections. About, Our Work, Impact, and Get Involved can each use a published Website page document (slug must match the route) with rich-text body, hero image, summary, and SEO fields; existing designed page content remains as a fallback when no CMS page is published. Stories and events have their own document types and publication workflows.
 - The live-match UI and provider adapter are implemented, but actual live scores will not be available until a provider key is configured and its competition coverage is confirmed.
 - Featured match documents are editorial metadata only at this stage; the match API does not yet filter the feed using those documents.
 - Impact metrics include a verification flag to discourage publishing unverified claims.
