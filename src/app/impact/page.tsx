@@ -1,12 +1,17 @@
 import { EditorialPage } from "../_components/editorial-page";
+import { CmsPage } from "../_components/cms-page";
 import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 import { refiImages } from "@/lib/media";
-import { getVerifiedImpactMetrics } from "@/lib/sanity/client";
+import { getPublishedPage, getVerifiedImpactMetrics } from "@/lib/sanity/client";
 
-export const metadata = { title: "Impact & Accountability", description: "Verified impact reporting and accountability from REFI Foundation." };
+export async function generateMetadata() {
+  const page = await getPublishedPage("impact");
+  return { title: page?.seoTitle || page?.title || "Impact & Accountability", description: page?.seoDescription || page?.summary || "Verified impact reporting and accountability from REFI Foundation." };
+}
 
 export default async function ImpactPage() {
-  const metrics = await getVerifiedImpactMetrics();
+  const [page, metrics] = await Promise.all([getPublishedPage("impact"), getVerifiedImpactMetrics()]);
+  if (page) return <CmsPage page={page} />;
   if (!metrics.length) return <EditorialPage eyebrow="Impact & accountability" title="Show the work. Measure what changes." intro="REFI will build its impact story around evidence: programmes delivered, people reached, outcomes observed and lessons learned." image={refiImages.community} imagePosition="center 42%" stories={[
     { number: "01", title: "Measure what matters.", text: "We will prioritise useful measures of participation, delivery and outcomes instead of inflated headline numbers or vanity metrics." },
     { number: "02", title: "Put context beside the numbers.", text: "Programme reporting should explain what happened, where, when and for whom. Numbers are more useful when people can understand the conditions behind them." },
