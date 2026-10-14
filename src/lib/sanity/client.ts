@@ -144,6 +144,7 @@ export type HomeSettings = {
   secondaryCtaUrl?: string;
   introHeading?: string;
   introBody?: string;
+  heroImageUrl?: string;
 };
 
 export async function getHomeSettings(): Promise<HomeSettings | null> {
@@ -152,7 +153,8 @@ export async function getHomeSettings(): Promise<HomeSettings | null> {
     return await sanityClient.fetch<HomeSettings | null>(
       `*[_type == "siteSettings"] | order(_updatedAt desc)[0] {
         heroEyebrow, heroTitle, heroDescription, primaryCtaLabel, primaryCtaUrl,
-        secondaryCtaLabel, secondaryCtaUrl, introHeading, introBody
+        secondaryCtaLabel, secondaryCtaUrl, introHeading, introBody,
+        "heroImageUrl": heroImage.asset->url
       }`,
       {},
       { next: { revalidate: 60 } },
