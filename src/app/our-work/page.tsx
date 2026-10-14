@@ -1,14 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { EditorialPage } from "../_components/editorial-page";
+import { CmsPage } from "../_components/cms-page";
 import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 import { refiImages } from "@/lib/media";
-import { getPublishedProjects } from "@/lib/sanity/client";
+import { getPublishedPage, getPublishedProjects } from "@/lib/sanity/client";
 
-export const metadata = { title: "Our Work", description: "Explore REFI Foundation's projects and programmes." };
+export async function generateMetadata() {
+  const page = await getPublishedPage("our-work");
+  return { title: page?.seoTitle || page?.title || "Our Work", description: page?.seoDescription || page?.summary || "Explore REFI Foundation projects and programmes." };
+}
 
 export default async function OurWorkPage() {
-  const projects = await getPublishedProjects();
+  const [page, projects] = await Promise.all([getPublishedPage("our-work"), getPublishedProjects()]);
+  if (page) return <CmsPage page={page} />;
   if (!projects.length) return <EditorialPage eyebrow="Our work" title="Investing in people, not just projects." intro="REFI programmes are designed around practical pathways to learning, belonging, wellbeing and a stronger future." image={refiImages.education} imagePosition="center 40%" stories={[
     { number: "01", title: "Education & opportunity", text: "We support learning environments and practical opportunities that help children and young people build confidence, capability and a sense of what is possible." },
     { number: "02", title: "Community development", text: "We back locally relevant initiatives that strengthen relationships, resilience and the people already creating value in their communities." },
