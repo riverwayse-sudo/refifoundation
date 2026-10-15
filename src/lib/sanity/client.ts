@@ -69,7 +69,7 @@ export async function getPublishedEvents(): Promise<PublishedEvent[]> {
     startsAt: text(item.startsAt), endsAt: optionalText(item.endsAt), location: optionalText(item.location),
     summary: optionalText(item.summary), registrationUrl: optionalText(item.registrationUrl),
     coverImageUrl: optionalText(item.coverImageUrl), status: text(item.status),
-  })).filter((item) => item.title && item.slug && item.startsAt && item.startsAt >= new Date().toISOString() && item.status === "Published")
+  })).filter((item) => item.title && item.slug && item.startsAt && Date.parse(item.startsAt) >= Date.now() && item.status === "Published")
     .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
 }
 
