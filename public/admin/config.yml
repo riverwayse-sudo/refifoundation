@@ -2,7 +2,6 @@ backend:
   name: github
   repo: riverwayse-sudo/refifoundation
   branch: main
-  auth_scope: repo
   base_url: https://refifoundation.com
   auth_endpoint: api/cms/auth
   cms_label_prefix: "refi-cms/"

@@ -15,7 +15,7 @@ export async function GET() {
   const url = new URL("https://github.com/login/oauth/authorize");
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("scope", "repo");
+  url.searchParams.set("scope", "public_repo");
   url.searchParams.set("state", state);
   const response = NextResponse.redirect(url);
   response.cookies.set(cookieName, state, {

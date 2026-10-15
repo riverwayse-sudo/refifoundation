@@ -12,7 +12,7 @@ The site uses Decap CMS instead of a time-limited hosted CMS subscription. Conte
 
 ### Required one-time authentication setup
 
-Create a dedicated GitHub OAuth App with callback URL `https://refifoundation.com/api/cms/callback`. Add its client ID and secret to the Vercel project as `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`; add `NEXT_PUBLIC_SITE_URL=https://refifoundation.com`. The secret must be server-only and must never be prefixed with `NEXT_PUBLIC_` or committed to Git. Configure Preview first and test sign-in before Production. The OAuth app must be authorised for the REFI repository.
+Create a dedicated GitHub OAuth App with callback URL `https://refifoundation.com/api/cms/callback`. Add its client ID and secret to the Vercel project as `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`; add `NEXT_PUBLIC_SITE_URL=https://refifoundation.com`. The secret must be server-only and must never be prefixed with `NEXT_PUBLIC_` or committed to Git. Configure Preview first and test sign-in before Production. Because the repository is public, the OAuth flow requests the narrower `public_repo` scope rather than access to all private repositories. The CMS user still needs write access to the REFI repository. Avoid granting unnecessary repository permissions.
 
 The OAuth handler uses a one-time state cookie, exchanges the code server-side, and sends the token only to the CMS popup opener. If the production domain changes, update the OAuth app callback, `NEXT_PUBLIC_SITE_URL`, and the Decap `base_url` together.
 
