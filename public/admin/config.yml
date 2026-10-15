@@ -1,0 +1,138 @@
+backend:
+  name: github
+  repo: riverwayse-sudo/refifoundation
+  branch: main
+  auth_scope: repo
+  base_url: https://refifoundation.com
+  auth_endpoint: api/cms/auth
+  cms_label_prefix: "refi-cms/"
+publish_mode: editorial_workflow
+media_folder: public/uploads
+public_folder: /uploads
+site_url: https://refifoundation.com
+display_url: https://refifoundation.com
+locale: en
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: "-"
+collections:
+  - name: home
+    label: Homepage
+    files:
+      - name: home
+        label: Homepage content
+        file: content/home.json
+        format: json
+        fields:
+          - { label: Hero eyebrow, name: heroEyebrow, widget: string, required: false }
+          - { label: Hero title, name: heroTitle, widget: string }
+          - { label: Hero description, name: heroDescription, widget: text }
+          - { label: Primary button label, name: primaryCtaLabel, widget: string }
+          - { label: Primary button URL, name: primaryCtaUrl, widget: string }
+          - { label: Secondary button label, name: secondaryCtaLabel, widget: string }
+          - { label: Secondary button URL, name: secondaryCtaUrl, widget: string }
+          - { label: Introduction heading, name: introHeading, widget: string }
+          - { label: Introduction body, name: introBody, widget: text }
+          - { label: Hero image, name: heroImageUrl, widget: image, required: false }
+  - name: stories
+    label: Stories & news
+    files:
+      - name: stories
+        label: Stories
+        file: content/stories.json
+        format: json
+        fields:
+          - label: Stories
+            name: stories
+            widget: list
+            summary: "{{fields.title}} · {{fields.category}}"
+            fields:
+              - { label: Headline, name: title, widget: string }
+              - { label: URL slug, name: slug, widget: string }
+              - { label: Summary, name: excerpt, widget: text }
+              - { label: Category, name: category, widget: select, options: ["Education", "Community", "Sport & wellbeing", "News", "Impact"] }
+              - { label: Cover image, name: coverImageUrl, widget: image, required: false }
+              - { label: Story body (Markdown), name: body, widget: markdown, required: false }
+              - { label: Publish date, name: publishedAt, widget: datetime, required: false }
+  - name: projects
+    label: Projects & programmes
+    files:
+      - name: projects
+        label: Projects
+        file: content/projects.json
+        format: json
+        fields:
+          - label: Projects
+            name: projects
+            widget: list
+            summary: "{{fields.title}} · {{fields.status}}"
+            fields:
+              - { label: Project name, name: title, widget: string }
+              - { label: URL slug, name: slug, widget: string }
+              - { label: Summary, name: summary, widget: text }
+              - { label: Focus area, name: focusArea, widget: select, options: ["Education", "Community support", "Sport & wellbeing"] }
+              - { label: Status, name: status, widget: select, options: ["Planned", "Active", "Completed"] }
+              - { label: Cover image, name: coverImageUrl, widget: image, required: false }
+  - name: events
+    label: Events
+    files:
+      - name: events
+        label: Events
+        file: content/events.json
+        format: json
+        fields:
+          - label: Events
+            name: events
+            widget: list
+            summary: "{{fields.title}} · {{fields.status}}"
+            fields:
+              - { label: Event name, name: title, widget: string }
+              - { label: URL slug, name: slug, widget: string }
+              - { label: Start date and time, name: startsAt, widget: datetime }
+              - { label: End date and time, name: endsAt, widget: datetime, required: false }
+              - { label: Location / online details, name: location, widget: string, required: false }
+              - { label: Description, name: summary, widget: text, required: false }
+              - { label: Registration URL, name: registrationUrl, widget: string, required: false }
+              - { label: Event image, name: coverImageUrl, widget: image, required: false }
+              - { label: Status, name: status, widget: select, options: ["Draft", "Published", "Cancelled"] }
+  - name: impact
+    label: Impact statistics
+    files:
+      - name: metrics
+        label: Impact metrics
+        file: content/impact-metrics.json
+        format: json
+        fields:
+          - label: Metrics
+            name: metrics
+            widget: list
+            summary: "{{fields.label}} · {{fields.value}}"
+            fields:
+              - { label: Metric label, name: label, widget: string }
+              - { label: Value, name: value, widget: string }
+              - { label: Context / reporting period, name: context, widget: string, required: false }
+              - { label: Display order, name: sortOrder, widget: number, value_type: int, required: false }
+              - { label: Verified for publication, name: verified, widget: boolean, default: false }
+  - name: pages
+    label: Website pages
+    files:
+      - name: pages
+        label: Pages
+        file: content/pages.json
+        format: json
+        fields:
+          - label: Pages
+            name: pages
+            widget: list
+            summary: "{{fields.title}} · /{{fields.slug}}"
+            fields:
+              - { label: Page title, name: title, widget: string }
+              - { label: URL slug, name: slug, widget: string }
+              - { label: Summary, name: summary, widget: text, required: false }
+              - { label: Hero image, name: heroImageUrl, widget: image, required: false }
+              - { label: SEO title, name: seoTitle, widget: string, required: false }
+              - { label: SEO description, name: seoDescription, widget: text, required: false }
+              - { label: Page body (Markdown), name: body, widget: markdown, required: false }
+              - { label: Publish date, name: publishedAt, widget: datetime, required: false }
+              - { label: Published, name: published, widget: boolean, default: false }

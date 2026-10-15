@@ -1,53 +1,55 @@
-# REFI CMS and live match centre
+# REFI Foundation CMS and live match centre
 
-## Current implementation foundation
+## CMS: Decap CMS (free, open-source, Git-based)
 
-- Sanity Studio is mounted at `/studio` and uses Sanity account authentication.
-- Content schemas cover website pages, stories/news, projects/programmes, events, impact statistics, and featured-match selection.
-- Live match retrieval is server-side through `/api/matches/live`. The API key is never exposed to the browser.
-- The match centre polls the same-origin endpoint every 60 seconds; the server cache is 30 seconds.
-- No fake match data is shown when the provider is not configured.
+The site uses Decap CMS instead of a time-limited hosted CMS subscription. Content is stored as JSON in this Git repository, with version history in GitHub and deployments through the existing Vercel pipeline.
 
-## Live match competition scope
+- Admin: `/admin/`
+- Content: `content/*.json`
+- Uploaded images: `public/uploads/`
+- Publication: editorial workflow, with changes reviewed through GitHub pull requests
+- No paid CMS plan, hosted database or external media subscription is required.
 
-The match centre is scoped to:
-- Nigerian domestic leagues returned by API-Football (country = Nigeria; competition type = League where the provider supplies the type).
+### Required one-time authentication setup
+
+Create a dedicated GitHub OAuth App with callback URL `https://refifoundation.com/api/cms/callback`. Add its client ID and secret to the Vercel project as `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`; add `NEXT_PUBLIC_SITE_URL=https://refifoundation.com`. The secret must be server-only and must never be prefixed with `NEXT_PUBLIC_` or committed to Git. Configure Preview first and test sign-in before Production. The OAuth app must be authorised for the REFI repository.
+
+The OAuth handler uses a one-time state cookie, exchanges the code server-side, and sends the token only to the CMS popup opener. If the production domain changes, update the OAuth app callback, `NEXT_PUBLIC_SITE_URL`, and the Decap `base_url` together.
+
+### Editing workflow
+
+1. Open `/admin/` and sign in with an authorised GitHub account.
+2. Edit homepage content, stories, projects/programmes, events, impact metrics or website pages.
+3. Save a draft and inspect the generated diff.
+4. Publish through the editorial workflow; review and merge only after the preview build and content are checked.
+5. Confirm the deployment is ready and inspect the public page.
+
+### Content integrity
+
+- Impact metrics must be explicitly marked verified before they appear publicly.
+- Events must have status `Published` and a future start date to appear in the upcoming-events list.
+- Pages require `published: true`; a future publication date remains hidden.
+- Story and page body fields accept Markdown and are converted into text blocks for the existing rich-text renderer.
+- Use consented images and never publish sensitive personal details about children or vulnerable people.
+
+## Live match centre
+
+The match centre remains separate from the CMS and retrieves scores server-side through `/api/matches/live`. API keys must remain server-only.
+
+Competition scope:
+- Nigerian domestic leagues supported by the chosen provider.
 - English Premier League (API-Football league ID 39).
 - UEFA Champions League (API-Football league ID 2).
 
-The adapter filters the provider's live fixture feed on the server before returning matches to the browser. Provider coverage of individual Nigerian competitions can vary by plan and season; verify NPFL and any other intended Nigerian divisions in the provider dashboard before launch. If API-Football's account plan does not include those competitions, upgrade or choose a provider with explicit coverage rather than assuming an empty feed means there are no games.
+The browser refreshes every 60 seconds and the server cache is 30 seconds. No fabricated scores are shown when the provider is not configured.
 
-## Required setup before publishing
+### Configuration still required for live scores
 
-1. Create a Sanity project for REFI Foundation and choose the production dataset.
-2. Add `NEXT_PUBLIC_SANITY_PROJECT_ID` and `NEXT_PUBLIC_SANITY_DATASET` to Vercel. These identify the public dataset; they are not API write tokens.
-3. Invite the owner/editor in Sanity and test creating, editing, previewing, and publishing each document type.
-4. Create an API-Football account and confirm coverage for the Nigerian leagues REFI wants to show, the English Premier League, and UEFA Champions League; verify live fixture quota, request rate limits, and season availability.
-5. Add `API_FOOTBALL_KEY` as a server-only Vercel environment variable for Preview first, then Production after testing. Keep the value encrypted/sensitive and never prefix it with `NEXT_PUBLIC_`.
-6. Redeploy after environment variables are added. Test live, half-time, finished, postponed, empty-feed, provider-error, and missing-key states.
-7. Confirm the feed only returns the three requested competition groups and that scores/statuses update as expected during an actual live fixture.
+1. Confirm a genuinely free football-data provider and its competition coverage; do not assume a free tier includes live Nigerian league data.
+2. Add the provider key as a server-side Vercel environment variable, Preview first.
+3. Test live, half-time, finished, postponed, empty-feed, provider-error and missing-key states.
+4. Verify Nigerian competition coverage and quota limits before Production.
 
-## Provider configuration plan
+## Cost policy
 
-- **Provider:** API-Football / API-Sports, using `https://v3.football.api-sports.io`.
-- **Secret:** `API_FOOTBALL_KEY` (server-side only).
-- **First environment:** Vercel Preview on the feature branch, so the owner can validate without affecting production.
-- **Refresh:** browser polling every 60 seconds; server cache 30 seconds. Check the selected subscription's terms and quota to ensure this polling pattern is appropriate.
-- **Fallback:** no fabricated scores; show the existing disconnected/provider-unavailable state and log provider errors without exposing the key.
-- **Launch gate:** verify Nigerian league coverage, rate limits, API response for each target competition, and all match statuses before production rollout.
-
-## Important limitations in this first foundation
-
-- Published Stories & News reads published story documents from Sanity and has dynamic story detail pages. Homepage headline, introduction, calls to action, and hero image are editable through Homepage & site settings. Projects/programmes, upcoming events, and verified impact metrics feed their public sections. About, Our Work, Impact, and Get Involved can each use a published Website page document (slug must match the route) with rich-text body, hero image, summary, and SEO fields; existing designed page content remains as a fallback when no CMS page is published. Stories and events have their own document types and publication workflows.
-- The live-match UI and provider adapter are implemented, but actual live scores will not be available until a provider key is configured and its competition coverage is confirmed.
-- Featured match documents are editorial metadata only at this stage; the match API does not yet filter the feed using those documents.
-- Impact metrics include a verification flag to discourage publishing unverified claims.
-- Production authentication and editor invitations must be completed in the Sanity project before the owner uses the Studio.
-
-## Operating workflow
-
-1. Create or edit content in Studio.
-2. Preview it and check the image, spelling, links, and SEO fields.
-3. Publish when approved.
-4. Verify the corresponding public page after the content-reading integration is deployed.
-5. For match data, check provider status and the timestamp on the match centre; do not manually overwrite provider scores.
+Do not activate a paid subscription, paid CMS plan, paid media service or paid sports-data plan without explicit approval. Free software does not guarantee that hosting, domains, storage or football data are free; check current quotas and billing settings for each service.
