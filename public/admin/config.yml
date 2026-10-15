@@ -2,14 +2,14 @@ backend:
   name: github
   repo: riverwayse-sudo/refifoundation
   branch: main
-  base_url: https://refifoundation.com
+  base_url: https://refifoundation-git-feat-ref-e726cb-valoria-institute-s-projects.vercel.app
   auth_endpoint: api/cms/auth
   cms_label_prefix: "refi-cms/"
 publish_mode: editorial_workflow
 media_folder: public/uploads
 public_folder: /uploads
-site_url: https://refifoundation.com
-display_url: https://refifoundation.com
+site_url: https://refifoundation-git-feat-ref-e726cb-valoria-institute-s-projects.vercel.app
+display_url: https://refifoundation-git-feat-ref-e726cb-valoria-institute-s-projects.vercel.app
 locale: en
 slug:
   encoding: ascii
