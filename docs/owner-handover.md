@@ -38,7 +38,7 @@ supply, and shipping a half-working version would be misleading to visitors.
 
 | Item | Why it is held back | What unblocks it |
 |---|---|---|
-| CMS end-to-end test | OAuth is configured, but no one has signed in and published yet | Section 3 |
+| CMS sign-in test | Pipeline verified, but no one has signed in through the browser yet | Section 3 |
 | Contact form | No email service configured; there is currently no contact page at all | Section 4 |
 | Online donations | `/donate` is a static page; no payment provider is connected | Section 4 |
 | Sports match centre | Separate, separately-funded workstream | Not part of this brief |
@@ -56,10 +56,22 @@ Vercel.** This was verified against the live site: `/api/cms/auth` responds by
 redirecting to GitHub's authorise page with a real client ID, and the "Login
 with GitHub" button in `/admin` opens that flow correctly.
 
-What has **not** yet been verified is a complete end-to-end run — an actual
-sign-in with a real GitHub account, saving a story, and confirming it appears on
-the live site. That requires a GitHub account with write access to the
-repository, so it must be done by someone on the Foundation's side.
+### What has been verified, and what has not
+
+The **publishing pipeline is verified end to end** against production. A story
+was committed to `content/stories.json` exactly as the CMS writes it, and:
+
+- Vercel built and deployed the commit automatically;
+- the story appeared on `/stories` and at its own detail page;
+- its Markdown rendered as real HTML (headings, bold, lists, links);
+- a second story dated in the future stayed hidden, on the listing and as a
+  detail page, until its publish date;
+- the test story was then removed and the site returned to its previous state.
+
+What has **not** been verified is the sign-in itself: the browser popup
+handshake between `/admin` and GitHub, and the editor screens behind it. That
+needs a real GitHub account with write access, so it must be done by someone on
+the Foundation's side. It is the last unproven step.
 
 ### Confirming the CMS works end to end
 
@@ -168,12 +180,21 @@ should read "RAISING • EMPOWERING • TRANSFORMING LIVES."
 
 | Item | Owner action needed |
 |---|---|
-| CMS end-to-end test | Sign in at `/admin` with a write-access GitHub account and publish a test story (section 3) |
+| CMS sign-in test | Sign in at `/admin` with a write-access GitHub account and publish a test story (section 3) |
 | Logo | Send the original PNG file (section 5) |
 | Contact form | Choose a provider and supply credentials (section 4) |
 | Donations | Choose a payment provider and supply credentials (section 4) |
 | Match centre | Separately funded workstream; not started |
+| Story pages in sitemap | Developer task, not an owner action — see below |
 
 The remaining work is mostly configuration rather than development: confirming
 the CMS works end to end, supplying the logo, and choosing contact and donation
 providers. The logo integration is small once the file arrives.
+
+### Known gap: story pages are not in the sitemap
+
+`sitemap.xml` lists the main pages but not individual story pages, so a
+published story will not be offered to search engines through the sitemap. It
+remains reachable and indexable through links, so this is a discoverability
+limitation rather than a fault. Worth fixing once the first real stories are
+published.
