@@ -1,3 +1,22 @@
 {
-  "stories": []
+  "stories": [
+    {
+      "title": "CMS Acceptance Test Story",
+      "slug": "cms-acceptance-test-story",
+      "excerpt": "Temporary story written to verify the publish pipeline end to end.",
+      "category": "News",
+      "coverImageUrl": "",
+      "body": "## Verification heading\n\nThis paragraph has **bold text** and a [link](/about).\n\n- first item\n- second item\n",
+      "publishedAt": "2026-10-24T15:48:18Z"
+    },
+    {
+      "title": "Scheduled Future Story (must stay hidden)",
+      "slug": "scheduled-future-story",
+      "excerpt": "This story is dated in the future and must not appear.",
+      "category": "News",
+      "coverImageUrl": "",
+      "body": "This should never be visible yet.",
+      "publishedAt": "2026-11-24T15:48:18Z"
+    }
+  ]
 }
