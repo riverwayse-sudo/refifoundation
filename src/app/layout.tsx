@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { siteUrl } from "@/lib/site";
 import "../styles/tokens.css";
 import "./globals.css";
-
-const siteUrl = "https://refifoundation.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
