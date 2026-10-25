@@ -33,6 +33,35 @@ npm audit
   using `SiteHeader`/`SiteFooter` from `_components/site-chrome.tsx`. That
   caused the footer to drift between pages. Use the shared components.
 
+## CMS (Decap, Git-based)
+
+Content is authored in Decap at `/admin`, which commits JSON into `content/` on
+`main`; Vercel then rebuilds and `src/lib/content.ts` reads that JSON at build
+time. The site stays fully static and needs no runtime content service.
+
+- **Only the editor login needs credentials.** `GITHUB_CLIENT_ID` and
+  `GITHUB_CLIENT_SECRET` (server-only) are required for the OAuth routes. The
+  public site renders without them; `/api/cms/auth` returns 503 rather than
+  crashing when they are absent.
+- **The catch-all header rule must be listed first.** For a repeated header key
+  the last matching rule wins, and `/:path*` also matches `/admin`. Listing the
+  admin rule first silently applied the strict site CSP to `/admin` and broke
+  the CMS (verified).
+- **Decap needs `'unsafe-eval'`** in `script-src`: its config loader evaluates
+  the YAML through a JavaScript string, and without it the admin fails with
+  "Evaluating a string as JavaScript violates ... script-src". It is confined to
+  `/admin`, which is noindex and behind OAuth; the public CSP must not contain it.
+- **`/admin` must keep its trailing slash.** Decap resolves `config.yml`
+  relative to the document URL, so serving `/admin` (slash stripped by Next)
+  made it request `/config.yml` and 404. `public/admin/index.html` sets
+  `rel="cms-config-url"` and `next.config.ts` rewrites `/admin` to it.
+- **Editor-supplied image URLs use `<img>`, not `next/image`.** They can point
+  at any host, which `next/image` would reject against the remote allowlist at
+  build time.
+- **CMS Markdown is rendered by `react-markdown`**, which escapes raw HTML, so
+  CMS-authored content cannot inject markup. Verified: `<script>`, `onerror`
+  and `javascript:` URLs are all neutralised.
+
 ## Verification expectations
 
 Build success is not sufficient evidence. After any user-visible change,
@@ -52,5 +81,8 @@ ask the owner for a bypass secret. The owner must change environment variables
 - **Logo**: the original asset is not in the repository. Do not recreate or
   substitute it. Work is blocked until the client supplies the file.
 - **Sports match centre** (`feat/cms-live-match-foundation`): deferred.
-- **CMS** and **contact/donations**: blocked on credentials (GitHub OAuth app,
-  Brevo, Paystack). Do not ship forms that cannot deliver.
+- **Contact form and donations** (`/donate` is a static page): blocked on
+  credentials (Brevo, Paystack). Do not ship forms that cannot deliver.
+- **The mobile navigation is the only route to interior pages below 800px**;
+  `.refi-nav-links` is hidden there. Do not remove `MobileNavigation` from
+  `SiteHeader` without replacing it.
