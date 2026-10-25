@@ -6,14 +6,33 @@ Canonical host: `https://www.refifoundation.com` (apex 308-redirects to `www`).
 ## Commands
 
 ```bash
-npm ci          # install from the committed lockfile
-npm run lint    # ESLint 9 flat config (next lint was removed in Next 16)
+npm ci                # install from the committed lockfile
+npm run lint          # ESLint 9 flat config (next lint was removed in Next 16)
 npm run typecheck
 npm run build
+npm run verify:sitemap # builds with temp content, asserts against live server
 npm audit
 ```
 
 `npm ci` is the only supported install — the lockfile is committed and pinned.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`:
+install from the lockfile, lint, type check, build, then `verify:sitemap`. The
+job is named **`verify`**, so the status check to require in branch protection
+is `verify`.
+
+`scripts/verify-sitemap.mjs` builds with temporary content and asserts against
+the running server, so it exercises the real route rather than reimplementing
+the filter. It fails if a published story is missing, a scheduled story leaks
+in, or a URL is not the canonical origin, and it restores `content/stories.json`
+in a `finally` block. It binds to an OS-assigned free port so a stale server on
+a fixed port cannot be mistaken for the build under test.
+
+Branch protection is **not yet enabled** — applying it needs a token with the
+`administration` scope, which the agent's credential lacks (403 on both the
+branch-protection and ruleset endpoints). This is an owner action.
 
 ## Verified constraints (do not re-litigate)
 
