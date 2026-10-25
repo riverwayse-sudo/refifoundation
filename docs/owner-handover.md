@@ -23,6 +23,7 @@ All of these return `200` on production:
 | Our Work | `/our-work` | Live |
 | Impact | `/impact` | Live |
 | Stories | `/stories` | Live |
+| Events | `/events` | Live (empty until an event is published) |
 | Get Involved | `/get-involved` | Live |
 | Donate | `/donate` | Live (static — see section 4) |
 | Marketing | `/marketing` | Live |
@@ -37,62 +38,57 @@ supply, and shipping a half-working version would be misleading to visitors.
 
 | Item | Why it is held back | What unblocks it |
 |---|---|---|
-| Editor login (CMS) | Needs a GitHub OAuth app | Section 3 |
+| CMS end-to-end test | OAuth is configured, but no one has signed in and published yet | Section 3 |
 | Contact form | No email service configured; there is currently no contact page at all | Section 4 |
 | Online donations | `/donate` is a static page; no payment provider is connected | Section 4 |
 | Sports match centre | Separate, separately-funded workstream | Not part of this brief |
 | Logo | The original asset has never been supplied | Section 5 |
 
-## 3. The CMS: what it needs from the owner
+## 3. The CMS
 
-The content management system is built and works. Editors will sign in at
-`https://www.refifoundation.com/admin`, and changes are committed to the
+The content management system is built, deployed and connected. Editors sign in
+at `https://www.refifoundation.com/admin`, and changes are committed to the
 repository as content files, which triggers a rebuild. That design means the
 site needs no database and no API keys to *serve* content.
 
-**The only missing piece is the GitHub OAuth app.** Until it exists, `/admin`
-shows a sign-in screen that cannot complete, and `/api/cms/auth` returns a
-clear "not configured" message rather than failing silently.
+**The GitHub OAuth app is already created and the credentials are already set in
+Vercel.** This was verified against the live site: `/api/cms/auth` responds by
+redirecting to GitHub's authorise page with a real client ID, and the "Login
+with GitHub" button in `/admin` opens that flow correctly.
 
-### Step 1 — Create the GitHub OAuth app
+What has **not** yet been verified is a complete end-to-end run — an actual
+sign-in with a real GitHub account, saving a story, and confirming it appears on
+the live site. That requires a GitHub account with write access to the
+repository, so it must be done by someone on the Foundation's side.
 
-1. Go to GitHub, then Settings, then Developer settings, then OAuth Apps, then
-   New OAuth App.
-2. Set the fields exactly as follows:
-
-   | Field | Value |
-   |---|---|
-   | Application name | `REFI Foundation CMS` (any name is fine) |
-   | Homepage URL | `https://www.refifoundation.com` |
-   | Authorization callback URL | `https://www.refifoundation.com/api/cms/callback` |
-
-   The callback URL must match exactly, including `https://` and the `www`.
-
-3. Click Register application.
-4. Copy the Client ID.
-5. Click Generate a new client secret and copy the secret. GitHub shows it once
-   only.
-
-### Step 2 — Add the credentials to Vercel
-
-In the Vercel project, go to Settings, then Environment Variables, and add two
-variables:
-
-| Name | Value | Environments |
-|---|---|---|
-| `GITHUB_CLIENT_ID` | the Client ID from step 1 | Production (and Preview if desired) |
-| `GITHUB_CLIENT_SECRET` | the client secret from step 1 | Production (and Preview if desired) |
-
-Both must be server-only. Do not prefix them with `NEXT_PUBLIC_`; that would
-expose the secret to the browser.
-
-Then redeploy so the new variables take effect.
-
-### Step 3 — Confirm it works
+### Confirming the CMS works end to end
 
 1. Visit `https://www.refifoundation.com/admin`.
-2. Click Login with GitHub and authorise the app.
+2. Click **Login with GitHub** and authorise the app.
 3. You should land in the editor with the collections listed.
+4. Create a test story, save it, and publish it.
+5. Confirm the story appears on `https://www.refifoundation.com/stories` after
+   the rebuild completes (a minute or two).
+
+If any step fails, the most likely cause is that the signed-in GitHub account
+does not have write access to the repository. See "Who can edit" below.
+
+### If the OAuth app ever needs to be recreated
+
+The existing app is registered under the Foundation's GitHub account. Should it
+ever need rebuilding, use exactly these values:
+
+| Field | Value |
+|---|---|
+| Homepage URL | `https://www.refifoundation.com` |
+| Authorization callback URL | `https://www.refifoundation.com/api/cms/callback` |
+
+The callback URL must match exactly, including `https://` and the `www`. Then
+set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in the Vercel project under
+Settings, then Environment Variables, and redeploy.
+
+Both variables must be **server-only**. Do not prefix them with `NEXT_PUBLIC_`;
+that would expose the secret to the browser.
 
 ### Who can edit
 
@@ -172,12 +168,12 @@ should read "RAISING • EMPOWERING • TRANSFORMING LIVES."
 
 | Item | Owner action needed |
 |---|---|
-| CMS editor login | Create the GitHub OAuth app (section 3) and add two Vercel variables |
+| CMS end-to-end test | Sign in at `/admin` with a write-access GitHub account and publish a test story (section 3) |
 | Logo | Send the original PNG file (section 5) |
 | Contact form | Choose a provider and supply credentials (section 4) |
 | Donations | Choose a payment provider and supply credentials (section 4) |
 | Match centre | Separately funded workstream; not started |
 
-Nothing else is outstanding. The remaining work is configuration, not
-development, with the single exception of the logo integration, which is small
-once the file arrives.
+The remaining work is mostly configuration rather than development: confirming
+the CMS works end to end, supplying the logo, and choosing contact and donation
+providers. The logo integration is small once the file arrives.
