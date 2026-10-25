@@ -76,6 +76,7 @@ img { max-width: 100%; }
 .refi-footer h4 { color: white; margin: 0 0 14px; }
 .refi-footer p { max-width: 420px; }
 .refi-footer a:hover { color: var(--refi-gold-400); }
+.refi-tagline { margin: 14px 0 0; color: var(--refi-gold-400); font-size: 12px; font-weight: 600; letter-spacing: .14em; }
 .refi-footer-bottom { margin-top: 50px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.14); font-size: 12px; }
 
 .refi-page-shell { min-height: 100vh; background: var(--refi-white); }
