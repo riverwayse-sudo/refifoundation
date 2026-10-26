@@ -156,18 +156,51 @@ one.
 
 ### Cost
 
-| Item | Free tier | Paid |
+Verified against Supabase's own pricing page (see Sources). Free is genuinely
+free; Pro is $25/month.
+
+| Item | Free | Pro ($25/mo) |
 |---|---|---|
-| Supabase Free | 500 MB database, 1 GB storage, 50k MAU, pauses after 7 days inactivity | Pro $25/month removes pausing |
-| Vercel | Current plan unchanged | Build minutes only |
+| Database | 500 MB | 8 GB |
+| File storage | 1 GB | 100 GB |
+| Monthly active users | 50,000 | 100,000 |
+| Projects | 2 active, **paused after 1 week idle** | Not paused |
+| Automatic backups | **Not included** | Daily, 7-day retention |
+| Leaked password protection | **Not included** | Included |
+| Session timeouts | **Not included** | Included |
+| Single session per user | **Not included** | Included |
+| Email branding | Supabase branding | Removable |
+| Auth audit logs | 1 hour | 7 days |
 
-**The important cost risk is the free-tier pause.** A Supabase free project
-pauses after 7 days with no activity. For a low-traffic foundation site, that
-could mean the client opens the dashboard to a sleeping project. Mitigations: a
-scheduled keep-alive ping, or the Pro plan.
+**The free tier is weaker on security, not just capacity.** Three items matter
+directly for a client CMS handling publishing rights:
 
-I will not create any billable resource. This needs the owner's decision on free
-vs. paid before I write a line of backend code.
+1. **No leaked-password protection.** Supabase will not check a chosen password
+   against known-breached lists. On a CMS where the password protects the ability
+   to publish to a public website, this is a real reduction in protection.
+2. **No session timeouts.** A signed-in session cannot be set to expire after
+   inactivity, so a session on a shared or lost device stays valid.
+3. **No automatic backups.** Content is not automatically backed up, so a
+   mistaken deletion has no point-in-time recovery.
+
+None of these are fatal, and all have partial mitigations (strong password
+enforcement, short manual session expiry, an export routine). But they are
+genuine trade-offs, and requirement 6 covers authentication hardening, so the
+owner should weigh them deliberately rather than discovering them later.
+
+**The free-tier pause is the most likely operational surprise.** A Supabase free
+project pauses after 7 days with no activity, so a low-traffic foundation site
+could present the client with a sleeping backend the first time they log in
+after a quiet fortnight. Mitigations: a scheduled keep-alive ping, or Pro.
+
+**I have created no billable resource and will not without authorisation** (1.6).
+Nothing above has been provisioned.
+
+### Sources
+
+Pricing and free-tier limits verified directly from
+<https://supabase.com/pricing> and <https://supabase.com/pricing.md> (the
+markdown form of the same page), rather than from memory.
 
 ---
 
@@ -293,11 +326,22 @@ looks. Three decisions are needed before implementation:
 3. **Backend ownership:** who creates the REFI Supabase project and supplies the
    environment variables.
 
-My recommendation: **Option B + free tier** if the owner's priority is a working,
-low-risk publishing workflow this week; **Option A + Pro** if the client will
-publish frequently and seconds-fast publishing matters enough to justify
-rewriting the public data layer.
+My recommendation: **Option B + Pro ($25/month).**
 
-I would start with Option B and treat Option A as a follow-up once the client is
-publishing happily, because B delivers the client's actual goal — independent
-publishing without GitHub — while leaving the working public site alone.
+The reasoning changed once I verified the tier details. Option B is still the
+right architecture first — it delivers the client's actual goal (independent
+publishing without GitHub) while leaving the working public site alone, and
+Option A can follow once the client is publishing happily.
+
+But the free tier is now harder to recommend than I first thought. It is not
+merely a capacity limit: it removes leaked-password protection, session timeouts
+and automatic backups, and it pauses the project after a week of inactivity. For
+a CMS whose entire purpose is to let a non-technical client publish to a live
+public website, $25/month buys the safeguards that make that workflow
+trustworthy. Against the cost of a developer fixing a lost-content incident, it
+is cheap.
+
+If budget is genuinely constrained, free is workable with mitigations, and I
+would rather proceed on free with a keep-alive ping than block the work. I would
+not, however, describe free as carrying no cost — the cost is paid in risk
+rather than in money.
