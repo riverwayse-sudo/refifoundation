@@ -93,12 +93,12 @@ last unproven step and it cannot be completed without the owner's project.
 1. Create a project at `supabase.com` on the **Free** plan. Do not reuse any
    existing project belonging to another organisation.
 2. In the project, open the SQL editor and run the contents of
-   `supabase/migrations/0001_cms_schema.sql`. This creates the tables and the
-   access rules.
-3. Create the storage bucket for images: a **public** bucket named `media`.
-4. Create the editor's account under Authentication, then add that user's id to
+   `supabase/migrations/0001_cms_schema.sql`. This creates the tables, the
+   access rules, and the public `media` storage bucket for images, so there is
+   no separate bucket to create.
+3. Create the editor's account under Authentication, then add that user's id to
    the `cms_admins` table so the account is recognised as an administrator.
-5. In Vercel, under Settings then Environment Variables, add:
+4. In Vercel, under Settings then Environment Variables, add:
 
    | Variable | Where to find it | Notes |
    |---|---|---|
@@ -108,7 +108,7 @@ last unproven step and it cannot be completed without the owner's project.
    | `VERCEL_DEPLOY_HOOK_URL` | Vercel, Settings, Git, Deploy Hooks | Create a hook for the `main` branch |
    | `CRON_SECRET` | Any long random string | Protects the keep-alive endpoint |
 
-6. Redeploy. Then visit `/admin` and sign in.
+5. Redeploy. Then visit `/admin` and sign in.
 
 Both `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` must be **server-only**. Do not
 prefix them with `NEXT_PUBLIC_`; that would publish the secret to the browser.
