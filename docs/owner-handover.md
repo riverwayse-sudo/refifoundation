@@ -28,8 +28,13 @@ All of these return `200` on production:
 | Donate | `/donate` | Live (static — see section 4) |
 | Marketing | `/marketing` | Live |
 
-The site is fully static. It has no database, no runtime content service, and
-no third-party service that must be online for pages to render.
+The public site is fully static. It has no database and no third-party service
+that must be online for pages to render. The content manager (section 3) is a
+separate, optional system: the site serves its committed copy of the content and
+keeps working whether or not that system is connected.
+
+Everything here runs at **zero recurring cost**. No paid tools, subscriptions or
+services are used, and none are required.
 
 ## 2. What is deliberately not live
 
@@ -38,7 +43,7 @@ supply, and shipping a half-working version would be misleading to visitors.
 
 | Item | Why it is held back | What unblocks it |
 |---|---|---|
-| CMS sign-in test | Pipeline verified, but no one has signed in through the browser yet | Section 3 |
+| CMS not yet connected | Built and tested, but no Supabase project has been created | Section 3 (owner action) |
 | Contact form | No email service configured; there is currently no contact page at all | Section 4 |
 | Online donations | `/donate` is a static page; no payment provider is connected | Section 4 |
 | Sports match centre | Separate, separately-funded workstream | Not part of this brief |
@@ -46,78 +51,111 @@ supply, and shipping a half-working version would be misleading to visitors.
 
 ## 3. The CMS
 
-The content management system is built, deployed and connected. Editors sign in
-at `https://www.refifoundation.com/admin`, and changes are committed to the
-repository as content files, which triggers a rebuild. That design means the
-site needs no database and no API keys to *serve* content.
+The content management system lets the Foundation publish without touching
+GitHub. Editors sign in at `/admin` with an email address and password, and
+changes are written to a Supabase database. Publishing requests a rebuild, which
+takes a minute or two.
 
-**The GitHub OAuth app is already created and the credentials are already set in
-Vercel.** This was verified against the live site: `/api/cms/auth` responds by
-redirecting to GitHub's authorise page with a real client ID, and the "Login
-with GitHub" button in `/admin` opens that flow correctly.
+This replaces the earlier GitHub-based editor. The GitHub OAuth app and its
+`GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` settings are no longer used and can be
+removed from Vercel.
 
-### What has been verified, and what has not
+### Status: built and verified, but not yet connected
 
-The **publishing pipeline is verified end to end** against production. A story
-was committed to `content/stories.json` exactly as the CMS writes it, and:
+Everything in this section has been built and tested. What has **not** happened is
+the one step only the owner can take: creating the Supabase project and adding its
+settings to Vercel. Until that is done, `/admin` shows a clear "not connected"
+message rather than a sign-in form that cannot work.
 
-- Vercel built and deployed the commit automatically;
-- the story appeared on `/stories` and at its own detail page;
-- its Markdown rendered as real HTML (headings, bold, lists, links);
-- a second story dated in the future stayed hidden, on the listing and as a
-  detail page, until its publish date;
-- the test story was then removed and the site returned to its previous state.
+### What has been verified
 
-What has **not** been verified is the sign-in itself: the browser popup
-handshake between `/admin` and GitHub, and the editor screens behind it. That
-needs a real GitHub account with write access, so it must be done by someone on
-the Foundation's side. It is the last unproven step.
+| Check | How it was verified | Result |
+|---|---|---|
+| Publishing rules | Unit tests against the rule functions, plus SQL tests against a real PostgreSQL 16 database | Pass |
+| Drafts and scheduled items stay hidden | SQL tests as an anonymous visitor | Pass |
+| Unverified impact figures stay hidden | SQL tests | Pass |
+| Non-administrators cannot write | SQL tests as a signed-in non-admin | Pass |
+| Protected endpoints reject strangers | Live requests to the running build: all returned 401 | Pass |
+| The keep-alive endpoint requires its secret | Live requests with no secret, a wrong secret, and the right secret | 401, 401, 200 |
+| Public pages unaffected | Every public page returns 200 with no backend configured | Pass |
+| Build and type checks | `npm run build`, `npm run typecheck`, `npm run lint` | Pass |
 
-### Confirming the CMS works end to end
+The tests can fail. This was checked deliberately by weakening a policy and by
+granting a temporary permission, and confirming the suite caught both.
 
-1. Visit `https://www.refifoundation.com/admin`.
-2. Click **Login with GitHub** and authorise the app.
-3. You should land in the editor with the collections listed.
-4. Create a test story, save it, and publish it.
-5. Confirm the story appears on `https://www.refifoundation.com/stories` after
-   the rebuild completes (a minute or two).
+### What has not been verified
 
-If any step fails, the most likely cause is that the signed-in GitHub account
-does not have write access to the repository. See "Who can edit" below.
+The sign-in flow end to end, because it needs a real Supabase project. This is the
+last unproven step and it cannot be completed without the owner's project.
 
-### If the OAuth app ever needs to be recreated
+### Connecting it (owner action)
 
-The existing app is registered under the Foundation's GitHub account. Should it
-ever need rebuilding, use exactly these values:
+1. Create a project at `supabase.com` on the **Free** plan. Do not reuse any
+   existing project belonging to another organisation.
+2. In the project, open the SQL editor and run the contents of
+   `supabase/migrations/0001_cms_schema.sql`. This creates the tables and the
+   access rules.
+3. Create the storage bucket for images: a **public** bucket named `media`.
+4. Create the editor's account under Authentication, then add that user's id to
+   the `cms_admins` table so the account is recognised as an administrator.
+5. In Vercel, under Settings then Environment Variables, add:
 
-| Field | Value |
-|---|---|
-| Homepage URL | `https://www.refifoundation.com` |
-| Authorization callback URL | `https://www.refifoundation.com/api/cms/callback` |
+   | Variable | Where to find it | Notes |
+   |---|---|---|
+   | `SUPABASE_URL` | Supabase, Project Settings, API | |
+   | `SUPABASE_ANON_KEY` | Supabase, Project Settings, API | Public by design; safe to expose |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Supabase, Project Settings, API | **Server only.** Never prefix with `NEXT_PUBLIC_` |
+   | `VERCEL_DEPLOY_HOOK_URL` | Vercel, Settings, Git, Deploy Hooks | Create a hook for the `main` branch |
+   | `CRON_SECRET` | Any long random string | Protects the keep-alive endpoint |
 
-The callback URL must match exactly, including `https://` and the `www`. Then
-set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in the Vercel project under
-Settings, then Environment Variables, and redeploy.
+6. Redeploy. Then visit `/admin` and sign in.
 
-Both variables must be **server-only**. Do not prefix them with `NEXT_PUBLIC_`;
-that would expose the secret to the browser.
+Both `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` must be **server-only**. Do not
+prefix them with `NEXT_PUBLIC_`; that would publish the secret to the browser.
 
 ### Who can edit
 
-The OAuth app grants access to anyone who can sign in and has write access to
-`riverwayse-sudo/refifoundation`. To control who can publish, control who is a
-collaborator on the repository. There is no separate user list inside the CMS.
+Only accounts listed in the `cms_admins` table. Adding or removing a row controls
+who can publish. There is no public sign-up, deliberately: a public sign-up form on
+a CMS would let anyone request an account.
 
 ### How publishing works
 
-- Saving a draft creates a pull request (editorial workflow is enabled), so
-  nothing goes live until it is approved and merged.
-- Merging triggers a Vercel rebuild. The site updates a minute or two later.
-- Scheduling works: a story with a future publish date stays hidden until that
-  date passes.
-- Impact figures require explicit verification. A figure is only displayed if an
-  editor ticks "verified". This is deliberate, so the Foundation does not
-  publish unverified numbers.
+- **Save draft** stores the item without showing it on the site.
+- **Publish** marks it live and asks the site to rebuild. The site updates a minute
+  or two later.
+- **Scheduling works.** An item with a future date stays hidden until that date
+  passes. Events disappear automatically once they have been and gone.
+- **Impact figures require verification.** A figure is displayed only when marked
+  verified in the database. The editor screen cannot set this, on purpose, so an
+  unverified number cannot be published by saving a form.
+- **Nothing is lost if the rebuild fails.** The content is already saved; it simply
+  appears at the next deployment.
+
+### Keeping it awake, and backups
+
+The free plan pauses a project after seven days without use. A daily task calls
+`/api/cms/cron/keep-alive` to prevent that. If the project does pause, the site
+itself keeps working from its stored copy of the content, but `/admin` will be
+unavailable until the project is restored in the Supabase dashboard.
+
+The free plan has **no automatic backups**. The recovery path is:
+
+```bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
+```
+
+This writes all content into the `content/` folder as plain files. Review and
+commit them. That copy in Git is what would be used to restore content after an
+accidental deletion, so it is worth running after any significant editing session.
+
+### If sign-in fails
+
+- **"Not authorised"** means the account is not listed in `cms_admins`. Add the
+  user id there.
+- **"Sign-in is temporarily unavailable"** usually means an environment variable is
+  missing or misspelled. Check all five above, then redeploy.
+- **"Too many requests"** is the rate limiter. Wait fifteen minutes.
 
 ## 4. Contact form and donations
 
@@ -180,7 +218,7 @@ should read "RAISING • EMPOWERING • TRANSFORMING LIVES."
 
 | Item | Owner action needed |
 |---|---|
-| CMS sign-in test | Sign in at `/admin` with a write-access GitHub account and publish a test story (section 3) |
+| Connect the CMS | Create the Supabase project and add the five environment variables (section 3) |
 | Logo | Send the original PNG file (section 5) |
 | Contact form | Choose a provider and supply credentials (section 4) |
 | Donations | Choose a payment provider and supply credentials (section 4) |

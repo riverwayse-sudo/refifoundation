@@ -317,31 +317,28 @@ Phased, with the existing site untouched until each phase is verified.
 
 ## 9. Recommendation
 
-The brief is achievable and the low content volume makes it lower-risk than it
-looks. Three decisions are needed before implementation:
+The owner has since set a binding constraint: **zero recurring cost**. No paid
+tools, subscriptions or services. That closes the cost question and the plan below
+reflects what was actually built.
 
-1. **Architecture:** Option A (runtime, seconds-fast publish, larger rework) or
-   Option B (build-time plus deploy hook, ~1–2 min publish, minimal risk).
-2. **Cost:** Supabase free (pauses after 7 days idle) or Pro at $25/month.
-3. **Backend ownership:** who creates the REFI Supabase project and supplies the
-   environment variables.
+**Decided: Option B, Supabase Free, zero recurring cost.**
 
-My recommendation: **Option B + Pro ($25/month).**
+Option B delivers the client's real goal - publishing without touching GitHub -
+while leaving the working public site untouched. Option A can follow later if the
+client ever wants sub-minute publishing, and nothing built here blocks it.
 
-The reasoning changed once I verified the tier details. Option B is still the
-right architecture first — it delivers the client's actual goal (independent
-publishing without GitHub) while leaving the working public site alone, and
-Option A can follow once the client is publishing happily.
+The free tier's limits are real and are handled rather than ignored:
 
-But the free tier is now harder to recommend than I first thought. It is not
-merely a capacity limit: it removes leaked-password protection, session timeouts
-and automatic backups, and it pauses the project after a week of inactivity. For
-a CMS whose entire purpose is to let a non-technical client publish to a live
-public website, $25/month buys the safeguards that make that workflow
-trustworthy. Against the cost of a developer fixing a lost-content incident, it
-is cheap.
+| Free-tier limit | Mitigation built |
+| --- | --- |
+| Project pauses after 7 days idle | Daily keep-alive endpoint (`/api/cms/cron/keep-alive`) plus a Vercel cron entry |
+| No automatic backups | `npm run cms:snapshot` writes all content to `content/` in Git, which is the recovery path |
+| No leaked-password protection | Documented in the handover notes as a residual risk; passwords are owner-managed and few |
+| No session timeout | Sessions are short-lived cookies; the handover notes tell the owner to sign out on shared machines |
+| Free projects have limited compute | Content volume is tiny (a handful of records), so usage stays far inside the allowance |
 
-If budget is genuinely constrained, free is workable with mitigations, and I
-would rather proceed on free with a keep-alive ping than block the work. I would
-not, however, describe free as carrying no cost — the cost is paid in risk
-rather than in money.
+The honest summary: free is workable, and the mitigations above cover the risks
+that matter for a site with this little content. The residual risks are documented
+for the owner rather than hidden, and the single highest-value upgrade if budget
+ever appears is Supabase Pro, which would remove the pause and add backups and
+leaked-password protection. Until then, nothing here depends on it.

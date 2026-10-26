@@ -1,14 +1,19 @@
-import homeData from "../../content/home.json";
-import storyData from "../../content/stories.json";
-import projectData from "../../content/projects.json";
-import eventData from "../../content/events.json";
-import metricData from "../../content/impact-metrics.json";
-import pageData from "../../content/pages.json";
+import { loadContentSource } from "./cms/content-source";
+import {
+  isPublishedStory,
+  isVisiblePage,
+  isPublishedEvent,
+  isVerifiedMetric,
+  isPublishedProject,
+} from "./cms/visibility";
 
-// Content is authored in the Git-based CMS (Decap) under public/admin, which
-// commits JSON into content/ and triggers a Vercel rebuild. These loaders read
-// that JSON at build time, so the site stays fully static and needs no runtime
-// content service or credentials.
+// Content is authored in the CMS dashboard at /admin, which writes to Supabase and
+// then triggers a deploy hook. The public site is statically generated, so these
+// loaders read at build time and the templates stay unchanged.
+//
+// When no backend is configured (local development, or a deployment without
+// Supabase), the loaders read the JSON snapshot under content/. Both paths produce
+// the same shape, so the filtering rules below apply identically either way.
 
 type ContentRecord = Record<string, unknown>;
 
@@ -23,7 +28,6 @@ const records = (value: unknown, key: string): ContentRecord[] => {
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 const optionalText = (value: unknown): string | undefined => text(value).trim() || undefined;
 const id = (prefix: string, value: unknown, index: number) => text(value) || `${prefix}-${index + 1}`;
-const isPast = (value?: string): boolean => Boolean(value) && Date.parse(value as string) <= Date.now();
 
 export type PublishedStory = {
   id: string;
@@ -38,7 +42,8 @@ export type PublishedStory = {
 };
 
 export async function getPublishedStories(): Promise<PublishedStory[]> {
-  return records(storyData, "stories")
+  const source = await loadContentSource();
+  return records({ stories: source.stories }, "stories")
     .map((item, index) => ({
       id: id("story", item.slug, index),
       title: text(item.title),
@@ -50,7 +55,7 @@ export async function getPublishedStories(): Promise<PublishedStory[]> {
       body: text(item.body),
     }))
     // Scheduled stories stay hidden until their publish time.
-    .filter((item) => item.title && item.slug && isPast(item.publishedAt))
+    .filter((item) => isPublishedStory(item))
     .sort((a, b) => Date.parse(b.publishedAt ?? "") - Date.parse(a.publishedAt ?? ""));
 }
 
@@ -70,8 +75,9 @@ export type PublishedPage = {
 };
 
 export async function getPublishedPage(slug: string): Promise<PublishedPage | null> {
-  const item = records(pageData, "pages").find(
-    (page) => text(page.slug) === slug && page.published === true && !isFuture(page.publishedAt),
+  const source = await loadContentSource();
+  const item = records({ pages: source.pages }, "pages").find(
+    (page) => text(page.slug) === slug && isVisiblePage(page),
   );
   if (!item) return null;
   return {
@@ -85,11 +91,6 @@ export async function getPublishedPage(slug: string): Promise<PublishedPage | nu
   };
 }
 
-const isFuture = (value: unknown): boolean => {
-  const publishedAt = optionalText(value);
-  return Boolean(publishedAt) && Date.parse(publishedAt as string) > Date.now();
-};
-
 export type PublishedProject = {
   id: string;
   title: string;
@@ -101,7 +102,8 @@ export type PublishedProject = {
 };
 
 export async function getPublishedProjects(): Promise<PublishedProject[]> {
-  return records(projectData, "projects")
+  const source = await loadContentSource();
+  return records({ projects: source.projects }, "projects")
     .map((item, index) => ({
       id: id("project", item.slug, index),
       title: text(item.title),
@@ -111,7 +113,7 @@ export async function getPublishedProjects(): Promise<PublishedProject[]> {
       status: optionalText(item.status),
       coverImageUrl: optionalText(item.coverImageUrl),
     }))
-    .filter((item) => item.title && item.slug)
+    .filter((item) => isPublishedProject(item))
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
@@ -128,7 +130,8 @@ export type PublishedEvent = {
 };
 
 export async function getPublishedEvents(): Promise<PublishedEvent[]> {
-  return records(eventData, "events")
+  const source = await loadContentSource();
+  return records({ events: source.events }, "events")
     .map((item, index) => ({
       id: id("event", item.slug, index),
       title: text(item.title),
@@ -141,14 +144,7 @@ export async function getPublishedEvents(): Promise<PublishedEvent[]> {
       coverImageUrl: optionalText(item.coverImageUrl),
       status: text(item.status),
     }))
-    .filter(
-      (item) =>
-        item.title &&
-        item.slug &&
-        item.startsAt &&
-        Date.parse(item.startsAt) >= Date.now() &&
-        item.status === "Published",
-    )
+    .filter((item) => Boolean(item.slug) && isPublishedEvent(item))
     .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
 }
 
@@ -161,7 +157,8 @@ export type VerifiedImpactMetric = {
 };
 
 export async function getVerifiedImpactMetrics(): Promise<VerifiedImpactMetric[]> {
-  return records(metricData, "metrics")
+  const source = await loadContentSource();
+  return records({ metrics: source.metrics }, "metrics")
     .map((item, index) => ({
       id: id("metric", item.label, index),
       label: text(item.label),
@@ -171,7 +168,7 @@ export async function getVerifiedImpactMetrics(): Promise<VerifiedImpactMetric[]
       verified: item.verified === true,
     }))
     // Only figures explicitly marked verified may be published.
-    .filter((item) => item.label && item.value && item.verified)
+    .filter((item) => isVerifiedMetric(item))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
@@ -189,5 +186,6 @@ export type HomeSettings = {
 };
 
 export async function getHomeSettings(): Promise<HomeSettings | null> {
-  return homeData as HomeSettings;
+  const source = await loadContentSource();
+  return source.home as HomeSettings;
 }
