@@ -12,7 +12,11 @@ img { max-width: 100%; }
 .refi-nav { position: absolute; inset: 0 0 auto; z-index: 20; }
 .refi-nav-inner { min-height: 84px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
 .refi-brand { display: inline-flex; align-items: center; gap: 12px; color: white; font-weight: 700; letter-spacing: -.02em; }
-.refi-mark { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.7); font-weight: 700; font-size: 13px; }
+/* The supplied artwork is dark navy and gold ink on a white background, so it
+   carries its own light plate against the dark navy header and footer. Keying the
+   background out would make the navy ink disappear into the navy chrome. */
+.refi-logo { height: 50px; width: 50px; display: block; flex: none; border-radius: 50%; }
+.refi-footer-logo { width: 264px; max-width: 100%; height: auto; display: block; background: #fff; padding: 10px 14px; border-radius: 2px; }
 .refi-nav-links { display: flex; align-items: center; gap: 28px; color: rgba(255,255,255,.9); font-size: 14px; font-weight: 600; }
 .refi-nav-links a:hover { color: var(--refi-gold-400); }
 .refi-support { background: var(--refi-red-700); color: white; padding: 12px 18px; border-radius: 2px; }
