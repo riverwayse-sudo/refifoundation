@@ -19,6 +19,7 @@ export function SiteHeader() {
             height={1013}
             priority
           />
+          <span className="refi-logo-name">REFI FOUNDATION</span>
         </Link>
         <nav className="refi-nav-links" aria-label="Primary navigation">
           <Link href="/about">About</Link>

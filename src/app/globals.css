@@ -16,6 +16,7 @@ img { max-width: 100%; }
    carries its own light plate against the dark navy header and footer. Keying the
    background out would make the navy ink disappear into the navy chrome. */
 .refi-logo { height: 50px; width: 50px; display: block; flex: none; border-radius: 50%; }
+.refi-logo-name { font-size: 15px; letter-spacing: .04em; }
 .refi-footer-logo { width: 264px; max-width: 100%; height: auto; display: block; background: #fff; padding: 10px 14px; border-radius: 2px; }
 .refi-nav-links { display: flex; align-items: center; gap: 28px; color: rgba(255,255,255,.9); font-size: 14px; font-weight: 600; }
 .refi-nav-links a:hover { color: var(--refi-gold-400); }
