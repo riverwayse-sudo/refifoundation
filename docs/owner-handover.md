@@ -185,16 +185,46 @@ should read "RAISING • EMPOWERING • TRANSFORMING LIVES."
 | Contact form | Choose a provider and supply credentials (section 4) |
 | Donations | Choose a payment provider and supply credentials (section 4) |
 | Match centre | Separately funded workstream; not started |
-| Story pages in sitemap | Developer task, not an owner action — see below |
+| Branch protection | Turn on a `main` rule requiring a pull request and the `verify` check (see below) |
+| Story pages in sitemap | Fixed — published stories now appear in `sitemap.xml` |
 
 The remaining work is mostly configuration rather than development: confirming
 the CMS works end to end, supplying the logo, and choosing contact and donation
 providers. The logo integration is small once the file arrives.
 
-### Known gap: story pages are not in the sitemap
+### Sitemap and indexing
 
-`sitemap.xml` lists the main pages but not individual story pages, so a
-published story will not be offered to search engines through the sitemap. It
-remains reachable and indexable through links, so this is a discoverability
-limitation rather than a fault. Worth fixing once the first real stories are
-published.
+`sitemap.xml` lists the main pages and every published story. Scheduled and
+unpublished stories are excluded, because the sitemap is generated from the same
+loader the public pages use. A story appears in the sitemap once it is published.
+
+Indexing is deliberately asymmetric. `www.refifoundation.com` is indexable, and
+that is the intended state — the site is meant to be found. The bare domain
+redirects to `www`, and Vercel deployment aliases and preview URLs are marked
+`noindex` on purpose, so only the canonical host competes in search results.
+`/admin` is also `noindex`. Do not add a site-wide `noindex` header: that would
+remove the public site from search engines, which is not wanted.
+
+### Automatic checks on changes
+
+Every pull request runs automated checks (`.github/workflows/ci.yml`): install
+from the lockfile, lint, type check, production build, and a sitemap test. A
+failing check blocks merging once branch protection is enabled. The check is
+named `verify`.
+
+### Protecting `main` (owner action)
+
+The checks above only block a merge if GitHub is told to require them. To turn
+that on: repository **Settings → Rules → Rulesets**, create a rule targeting
+`main`, and set:
+
+- Require a pull request before merging, with at least one approval
+- Dismiss stale approvals when new commits are pushed
+- Require conversation resolution
+- Require the status check `verify`
+- Block force pushes
+- Block branch deletion
+
+This does not conflict with the CMS. Drafts are committed to a `cms/*` branch and
+opened as a pull request, so normal publishing already goes through a pull
+request. Requiring one changes nothing about how content is written.
