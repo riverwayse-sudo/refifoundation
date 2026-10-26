@@ -17,13 +17,23 @@ export const dynamic = "force-dynamic";
  * will need manual restoration. That limitation is documented rather than hidden.
  */
 export async function GET(request: Request) {
-  // Vercel sends `Authorization: Bearer <CRON_SECRET>` for cron invocations. The
-  // endpoint is public, so it must not be usable to generate arbitrary traffic.
-  if (cronSecret) {
-    const header = request.headers.get("authorization") ?? "";
-    if (header !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Not authorised." }, { status: 401 });
-    }
+  // Vercel sends `Authorization: Bearer <CRON_SECRET>` automatically for cron
+  // invocations once CRON_SECRET is set, so requiring it costs the scheduled call
+  // nothing. The endpoint fails closed: without a configured secret it refuses
+  // rather than allowing anyone to generate traffic against the database.
+  if (!cronSecret) {
+    return NextResponse.json(
+      {
+        error: "Not authorised.",
+        detail: "CRON_SECRET is not configured, so this endpoint is disabled.",
+      },
+      { status: 401, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  const header = request.headers.get("authorization") ?? "";
+  if (header !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Not authorised." }, { status: 401 });
   }
 
   if (!isContentBackendConfigured) {

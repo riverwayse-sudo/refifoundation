@@ -127,8 +127,22 @@ a CMS would let anyone request an account.
 - **Scheduling works.** An item with a future date stays hidden until that date
   passes. Events disappear automatically once they have been and gone.
 - **Impact figures require verification.** A figure is displayed only when marked
-  verified in the database. The editor screen cannot set this, on purpose, so an
-  unverified number cannot be published by saving a form.
+  verified. The editor screen cannot set this, on purpose, so an unverified number
+  cannot be published by saving a form. **There is currently no in-app control for
+  it:** to verify a figure, an administrator sets it directly in the Supabase SQL
+  editor, for example:
+
+  ```sql
+  update public.content
+     set data = jsonb_set(data, '{verified}', 'true')
+   where collection = 'impact_metrics'
+     and slug = 'the-figure-slug';
+  ```
+
+  Setting it back to `false` withdraws the figure from the public site at the next
+  rebuild. If this becomes a frequent task, an in-app toggle is a small addition —
+  it was left out deliberately rather than built without a chance to review the
+  editorial rule.
 - **Nothing is lost if the rebuild fails.** The content is already saved; it simply
   appears at the next deployment.
 

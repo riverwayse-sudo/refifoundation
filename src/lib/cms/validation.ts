@@ -222,9 +222,10 @@ export function validateContent(
           context: str(input.context),
           sortOrder: Number.isNaN(sortOrder) ? 0 : sortOrder,
           // `verified` is deliberately absent. It is not accepted from the client at
-          // all: a figure becomes verified only through the dedicated verification
-          // action, so saving the form can never publish an unverified claim. The
-          // stored value is preserved by the content route on update.
+          // all, so saving this form can never publish an unverified claim. The stored
+          // value is preserved by the content route on update. There is currently no
+          // in-app way to set it to true: an administrator sets it directly in the
+          // database. See docs/owner-handover.md.
         },
       };
     }
