@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "verify:sitemap": "node scripts/verify-sitemap.mjs"
+    "verify:sitemap": "node scripts/verify-sitemap.mjs",
+    "test:cms": "node --test \"tests/**/*.test.ts\"",
+    "test:rls": "bash scripts/test-rls.sh",
+    "cms:snapshot": "node scripts/cms-snapshot.mjs"
   },
   "dependencies": {
     "lucide-react": "1.61.0",
