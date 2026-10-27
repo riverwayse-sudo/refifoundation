@@ -76,6 +76,7 @@ img { max-width: 100%; }
 .refi-footer h4 { color: white; margin: 0 0 14px; }
 .refi-footer p { max-width: 420px; }
 .refi-footer a:hover { color: var(--refi-gold-400); }
+.refi-tagline { margin: 14px 0 0; color: var(--refi-gold-400); font-size: 12px; font-weight: 600; letter-spacing: .14em; }
 .refi-footer-bottom { margin-top: 50px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.14); font-size: 12px; }
 
 .refi-page-shell { min-height: 100vh; background: var(--refi-white); }
@@ -93,7 +94,7 @@ img { max-width: 100%; }
 
 .refi-editorial-hero { min-height: 610px; position: relative; display: grid; align-items: end; overflow: hidden; background: var(--refi-blue-950); color: white; }
 .refi-editorial-hero-image { position: absolute; inset: 0; }
-.refi-editorial-hero-image img { object-fit: cover; filter: saturate(.9); }
+.refi-editorial-hero-image img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.9); }
 .refi-editorial-hero-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(7,26,58,.93), rgba(7,26,58,.5) 52%, rgba(7,26,58,.12)), linear-gradient(0deg, rgba(7,26,58,.6), transparent 55%); }
 .refi-editorial-hero-content { position: relative; z-index: 2; padding: 155px 0 80px; max-width: 900px; margin-left: max(20px, calc((100vw - 1180px) / 2)); margin-right: auto; }
 .refi-editorial-hero-content h1 { max-width: 850px; margin: 18px 0 24px; font-size: clamp(48px, 7vw, 82px); line-height: .98; letter-spacing: -.045em; }
@@ -137,6 +138,81 @@ img { max-width: 100%; }
 .refi-reveal { animation: refi-reveal .75s cubic-bezier(.2,.7,.2,1) both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
 @keyframes refi-reveal { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes refi-image-in { from { opacity: 0; transform: scale(1.035); } to { opacity: 1; transform: scale(1); } }
+
+/* CMS-managed listings: stories, programmes, events and verified impact. */
+.refi-cms-stories { padding: 70px 0 100px; }
+.refi-cms-story-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.refi-cms-story-card { min-width: 0; border: 1px solid var(--refi-border); background: white; }
+.refi-cms-story-card > img { display: block; width: 100%; height: 220px; object-fit: cover; background: var(--refi-blue-50); }
+.refi-cms-story-card-body { padding: 24px; }
+.refi-cms-story-card-body > span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--refi-blue-700); }
+.refi-cms-story-card h2 { font-size: 25px; line-height: 1.12; margin: 14px 0 10px; }
+.refi-cms-story-card p { color: var(--refi-ink-soft); }
+.refi-cms-story-card a { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; color: var(--refi-blue-700); font-weight: 700; }
+
+.refi-home-cms-stories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 28px; }
+.refi-home-cms-stories article { padding: 28px; background: white; color: var(--refi-ink); border: 1px solid var(--refi-border); border-top: 3px solid var(--refi-gold-500); }
+.refi-home-cms-stories article > span { color: var(--refi-blue-700); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; font-weight: 700; }
+.refi-home-cms-stories h3 { margin: 14px 0 10px; font-size: clamp(20px, 2.4vw, 28px); line-height: 1.15; }
+.refi-home-cms-stories p { color: var(--refi-ink-soft); }
+.refi-home-cms-stories a { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--refi-blue-700); font-weight: 700; }
+
+.refi-impact-metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.refi-impact-metric-card { min-height: 210px; padding: 28px; background: white; border: 1px solid var(--refi-border); border-top: 3px solid var(--refi-gold-500); }
+.refi-impact-metric-card > strong { display: block; color: var(--refi-blue-700); font-size: clamp(32px, 4vw, 48px); line-height: 1; letter-spacing: -.04em; }
+.refi-impact-metric-card h2 { margin: 18px 0 8px; font-size: 20px; line-height: 1.2; }
+.refi-impact-metric-card p, .refi-impact-disclaimer { color: var(--refi-ink-soft); }
+.refi-impact-disclaimer { font-size: 12px; margin-top: 20px; }
+
+.refi-events-hero { min-height: 460px; background: var(--refi-blue-950); color: white; }
+.refi-events-hero .refi-editorial-hero-content { padding-top: 160px; padding-bottom: 70px; }
+.refi-events-hero .refi-editorial-hero-content h1 { font-size: clamp(42px, 6vw, 72px); line-height: 1.04; max-width: 850px; }
+.refi-events-hero .refi-editorial-hero-content > p:last-child { color: rgba(255,255,255,.82); max-width: 660px; font-size: 18px; }
+
+.refi-story-detail { padding: 150px 20px 100px; }
+.refi-story-detail-head { width: min(820px, 100%); margin: 0 auto 40px; }
+.refi-story-detail-head h1 { font-size: clamp(42px, 6vw, 72px); line-height: 1.02; margin: 16px 0; }
+.refi-story-detail-head > p:not(.refi-eyebrow) { font-size: 20px; color: var(--refi-ink-soft); }
+.refi-story-detail-head time { color: var(--refi-muted); font-size: 13px; }
+.refi-story-detail-image { position: relative; width: min(1000px, 100%); height: clamp(260px, 50vw, 560px); margin: 0 auto 50px; background: var(--refi-blue-50); }
+.refi-story-detail-image img { width: 100%; height: 100%; object-fit: cover; }
+.refi-story-detail-body { width: min(760px, 100%); margin: 0 auto; font-size: 18px; line-height: 1.8; color: var(--refi-ink-soft); }
+.refi-story-detail-body h2, .refi-story-detail-body h3 { color: var(--refi-ink); line-height: 1.2; }
+.refi-story-detail-body img { max-width: 100%; height: auto; }
+
+.refi-cms-page-image-fallback { position: absolute; inset: 0; background: linear-gradient(135deg, var(--refi-blue-950), var(--refi-blue-700)); }
+.refi-cms-page-body { width: min(820px, calc(100% - 40px)); margin: 0 auto; padding: 70px 0 100px; color: var(--refi-ink-soft); font-size: 18px; line-height: 1.8; }
+.refi-cms-page-body h2, .refi-cms-page-body h3 { color: var(--refi-ink); line-height: 1.2; margin-top: 1.8em; }
+.refi-cms-page-body img { max-width: 100%; height: auto; }
+.refi-cms-page-body a { color: var(--refi-blue-700); text-decoration: underline; text-underline-offset: 3px; }
+
+.refi-match-notice { padding: 28px; background: var(--refi-white-soft); border: 1px solid var(--refi-border); color: var(--refi-ink-soft); }
+.refi-match-notice strong { display: block; color: var(--refi-ink); font-size: 18px; margin-bottom: 6px; }
+.refi-match-notice p { margin: 0; max-width: 680px; }
+
+@media (max-width: 1000px) {
+  .refi-cms-story-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 800px) {
+  .refi-cms-story-grid, .refi-home-cms-stories, .refi-impact-metric-grid { grid-template-columns: 1fr; }
+  .refi-cms-stories { padding: 55px 0 75px; }
+  .refi-story-detail { padding: 125px 16px 75px; }
+  .refi-cms-page-body { padding: 55px 0 75px; }
+}
+
+/* Mobile navigation: the desktop link row is hidden below 800px. */
+.refi-mobile-navigation { display: none; position: relative; }
+.refi-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: var(--refi-blue-950); background: white; border: 1px solid var(--refi-border); border-radius: 2px; cursor: pointer; }
+.refi-mobile-toggle:focus-visible, .refi-mobile-menu a:focus-visible { outline: 3px solid var(--refi-gold-500); outline-offset: 3px; }
+.refi-mobile-menu { position: absolute; z-index: 50; top: calc(100% + 12px); right: 0; width: min(88vw, 340px); padding: 10px; background: white; border: 1px solid var(--refi-border); box-shadow: 0 18px 48px rgba(7,26,58,.18); display: grid; }
+.refi-mobile-menu a { padding: 14px 12px; color: var(--refi-ink); text-decoration: none; border-bottom: 1px solid var(--refi-border); font-weight: 600; }
+.refi-mobile-menu a:last-child { color: var(--refi-red-700); border-bottom: 0; }
+.refi-mobile-menu a:hover { background: var(--refi-blue-50); }
+
+@media (max-width: 800px) {
+  .refi-mobile-navigation { display: block; }
+}
 
 @media (max-width: 800px) {
   .refi-container { width: min(100% - 28px, 680px); }
