@@ -14,7 +14,7 @@ export function SiteHeader() {
           <Image
             className="refi-logo"
             src="/images/refi-foundation-emblem.png"
-            alt="REFI Foundation"
+            alt="REFI Foundation logo"
             width={1013}
             height={1013}
             priority
@@ -44,7 +44,7 @@ export function SiteFooter() {
           <Image
             className="refi-footer-logo"
             src="/images/refi-foundation-logo.png"
-            alt="REFI Foundation"
+            alt="REFI Foundation logo"
             width={988}
             height={1447}
           />
