@@ -88,6 +88,27 @@ confirm the **deployed** site: fetch the live URL, check the rendered HTML and
 response headers, and load it in a browser to confirm hydration and client-side
 navigation still work.
 
+## Live football feed (PR #22 branch)
+
+`/matches` renders a live-score feed backed by API-Football. The provider's free
+tier allows roughly **100 requests per day**, so the feed is built around not
+spending requests carelessly. Do not undo any of the following:
+
+- **No short `revalidate` on the route.** `revalidate = 30` is 2,880 requests a
+  day on its own, which exhausts the free tier within the first hour of a match
+  day. The upstream call is cached for `REFRESH_SECONDS` (120) in
+  `src/lib/football/live.ts`, and the route response is cacheable for the same
+  window. Many visitors and repeated polls then share one provider request.
+- **The daily budget guard is load-bearing.** `takeBudgetSlot()` stops upstream
+  calls once `LIVE_SCORE_DAILY_BUDGET` (default 90) is reached, so the feed
+  degrades to an honest message instead of silently breaking for the rest of the
+  day. It is a per-instance soft limit; the hard cap is the revalidate window.
+- **The client poll interval is not the cost driver.** Polling re-reads a cached
+  feed, so `POLL_MS` can stay short without costing provider requests. Polling
+  also pauses while the tab is hidden.
+- **Test against a mock, not the real provider.** `FOOTBALL_API_BASE` is
+  overridable, so point it at a local server rather than burning the quota.
+
 ## Vercel
 
 Preview deployments sit behind Vercel Authentication (SSO), so previews cannot
