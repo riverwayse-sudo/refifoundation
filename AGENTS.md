@@ -129,6 +129,38 @@ which is version-controlled but **not applied automatically**. Until an owner
 applies it, totals report as unavailable and the webhook reports a storage
 error, rather than pretending a donation was recorded.
 
+## Games for Charity (PR branch)
+
+  The hub lives at `/play`, with one playable route per game at `/play/[game]`.
+  Rules are pure functions in `src/lib/games/`; components in
+  `src/app/play/_components/` own presentation only.
+
+  - **`src/lib/games/catalog.ts` is the single source of truth.** The hub cards,
+    the per-game routes, the sitemap and the score validator all read from it, so
+    a game cannot be advertised on the hub without a definition, a score rule and
+    a real route. Add a game by adding a catalog entry and a component, not by
+    hardcoding a card.
+  - **Game scores and donations are separate concepts.** A score is a game result;
+    a donation is a verified Paystack payment; a fundraising total is the sum of
+    verified donations; a leaderboard ranks scores only. Never present a score as
+    money raised, a reward or a prize, and never make gameplay depend on payment.
+  - **Scores are untrusted until the server can verify them.** The games keep
+    scores in component state, on the player's device. `/api/scores` validates a
+    submission (game known, integer score inside the catalog bounds, believable
+    duration, completed round, sanitised display name with no email or link, body
+    size cap, per-client rate limit) and then **stores nothing**, because a
+    browser-reported score cannot be shown to be genuine without a server-issued
+    session. The public leaderboard therefore stays disabled. Do not enable
+    storage without first issuing and validating a session on the server.
+  - **`supabase/migrations/0002_game_scores.sql` is version-controlled but NOT
+    applied.** It has RLS enabled with no policy (service role only) and a unique
+    `(session_id, game)` for submission idempotency. Applying it alone does not
+    make scores trustworthy; the session work comes first.
+  - **Test with `npm run verify:games`.** It imports the pure rules directly and
+    then drives a real production server, asserting that all four games are
+    playable, that an unknown game is a 404, that scores are never presented as
+    donations, and that malformed or out-of-range submissions are rejected.
+
 ## Vercel
 
 Preview deployments sit behind Vercel Authentication (SSO), so previews cannot
