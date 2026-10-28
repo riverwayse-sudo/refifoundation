@@ -88,6 +88,47 @@ confirm the **deployed** site: fetch the live URL, check the rendered HTML and
 response headers, and load it in a browser to confirm hydration and client-side
 navigation still work.
 
+## Donations and payments (PR #1 branch)
+
+Donation handling lives in `src/lib/paystack.ts`, `src/lib/donations.ts` and the
+`/api/paystack/*` routes. Donor money is involved, so these rules are not
+optional:
+
+- **The browser never decides a donation is successful.** The success page and
+  the game read the status from Paystack on the server. The `?reference=` in the
+  URL is only an identifier, never proof of payment.
+- **The amount is verified, not trusted.** `initializeTransaction()` records
+  `expected_amount_minor` in the transaction metadata, and
+  `verifyTransaction()` compares Paystack's amount and currency against it. A
+  mismatch fails verification. Do not remove this check or fall back to trusting
+  the event body's `amount`.
+- **Amounts are bounded server-side.** `validateDonationAmount()` enforces
+  `MIN_DONATION_MINOR` / `MAX_DONATION_MINOR` before any charge is attempted.
+- **The webhook signature is checked over the raw body** with HMAC-SHA512, then
+  the transaction is re-verified with Paystack. The event body's own `status` is
+  never trusted.
+- **Idempotency relies on the unique `reference`** plus
+  `resolution=ignore-duplicates`. Do not change this to `merge-duplicates`: a
+  replay would overwrite the row and be reported as a fresh insert, so a retried
+  webhook could be double-counted.
+- **A storage failure is never reported as a recorded donation.** `recorded` is
+  true only when a durable store accepted the row.
+- **Totals distinguish a known zero from an unknown figure.**
+  `getCampaignTotals()` returns `available: true` with a total, or
+  `available: false` with a reason. Never collapse those into a zero, or an
+  unreachable database gets reported to donors as "nothing raised".
+- **Donor details stay out of public surfaces.** Totals select only
+  `amount_minor` and `currency`, and the migration enables RLS with no policy so
+  only the service role can read the table.
+- **Test with `npm run verify:donations`,** which drives a real server against
+  mock Paystack and Supabase services. `PAYSTACK_API_BASE` points at the mock so
+  no real payment is created.
+
+The `donations` table is created by `supabase/migrations/0001_donations.sql`,
+which is version-controlled but **not applied automatically**. Until an owner
+applies it, totals report as unavailable and the webhook reports a storage
+error, rather than pretending a donation was recorded.
+
 ## Vercel
 
 Preview deployments sit behind Vercel Authentication (SSO), so previews cannot
