@@ -4,8 +4,8 @@
  * Storage is optional. When Supabase is configured (the same free-tier project
  * the CMS plan uses) verified donations are persisted through its REST API, so
  * no extra dependency or recurring cost is introduced. When it is not
- * configured, nothing is invented: `getCampaignTotals()` returns null and the
- * UI must say the figures are unavailable rather than showing a made-up total.
+ * configured, nothing is invented: totals report themselves as unavailable and
+ * the UI must say so rather than showing a made-up figure.
  *
  * A donation row is keyed by the Paystack reference. That single constraint is
  * what makes webhook delivery idempotent: Paystack retries webhooks, and a
@@ -23,18 +23,29 @@ export type DonationRecord = {
 };
 
 export type RecordResult = {
+  /** True only when a durable store accepted a new row. */
   stored: boolean;
+  /** True when the reference was already recorded. */
   duplicate: boolean;
+  /** True when a durable store is configured at all. */
   persistence: boolean;
   error?: string;
 };
 
-export type CampaignTotals = {
-  currency: string;
-  totalMinor: number;
-  donationCount: number;
-  updatedAt: string;
-} | null;
+/**
+ * Campaign totals.
+ *
+ * `available: true` with a zero total means the store was queried and there are
+ * genuinely no donations. `available: false` means the figure could not be
+ * established. Those two states must never be collapsed, or an unreachable
+ * database would be reported to donors as "nothing raised".
+ */
+export type CampaignTotals =
+  | { available: true; totalMinor: number; currency: string; donationCount: number; updatedAt: string }
+  | { available: false; reason: "not-configured" | "unavailable" };
+
+/** Cap on rows fetched for a total, so a large table cannot exhaust the free tier. */
+const MAX_ROWS = 10_000;
 
 function supabaseConfig(): { url: string; key: string } | null {
   const url = process.env.SUPABASE_URL?.trim();
@@ -59,6 +70,11 @@ const seenInProcess = new Set<string>();
  * Persist a verified donation. Returns duplicate:true when the reference has
  * already been recorded, so callers can acknowledge the webhook without
  * counting the donation again.
+ *
+ * `ignore-duplicates` is deliberate: with `merge-duplicates` a replayed webhook
+ * would overwrite the stored row and PostgREST would return it as if it were a
+ * fresh insert, so a replay could both mutate the record and be reported as
+ * newly stored. Ignoring duplicates makes a replay a genuine no-op.
  */
 export async function recordDonation(record: DonationRecord): Promise<RecordResult> {
   const config = supabaseConfig();
@@ -76,9 +92,7 @@ export async function recordDonation(record: DonationRecord): Promise<RecordResu
         apikey: config.key,
         Authorization: `Bearer ${config.key}`,
         "Content-Type": "application/json",
-        // merge-duplicates makes a replayed webhook a no-op instead of an error,
-        // and returning=representation lets us tell a fresh insert from a replay.
-        Prefer: "resolution=merge-duplicates,return=representation",
+        Prefer: "resolution=ignore-duplicates,return=representation",
       },
       body: JSON.stringify([{
         reference: record.reference,
@@ -92,12 +106,21 @@ export async function recordDonation(record: DonationRecord): Promise<RecordResu
       cache: "no-store",
     });
 
+    // PostgREST reports a unique-violation as 409 when the conflict cannot be
+    // ignored; treat it as the duplicate it is.
     if (response.status === 409) return { stored: false, duplicate: true, persistence: true };
+
     if (!response.ok) {
-      return { stored: false, duplicate: false, persistence: true, error: `Store rejected the donation (${response.status}).` };
+      // A missing table is a setup gap, not a transient fault, and must not be
+      // reported as a recorded donation.
+      const hint = response.status === 404 || response.status === 400
+        ? "The donation store is not ready. The donations table may not exist yet."
+        : `The donation store rejected the donation (${response.status}).`;
+      return { stored: false, duplicate: false, persistence: true, error: hint };
     }
 
     const rows = await response.json() as unknown[];
+    // With ignore-duplicates, a replay returns 201 and an empty representation.
     return { stored: Array.isArray(rows) && rows.length > 0, duplicate: !Array.isArray(rows) || rows.length === 0, persistence: true };
   } catch {
     return { stored: false, duplicate: false, persistence: true, error: "Unable to reach the donation store." };
@@ -105,29 +128,40 @@ export async function recordDonation(record: DonationRecord): Promise<RecordResu
 }
 
 /**
- * Campaign totals derived only from persisted, verified donations. Returns null
- * when there is no durable store, so the caller cannot render a total that was
- * not actually counted.
+ * Campaign totals derived only from persisted, verified donations.
+ *
+ * A sum is only reported when the full set of rows was retrieved. If the store
+ * holds more rows than we are willing to fetch, the total is reported as
+ * unavailable rather than as a truncated, understated figure.
  */
 export async function getCampaignTotals(initiative?: string): Promise<CampaignTotals> {
   const config = supabaseConfig();
-  if (!config) return null;
+  if (!config) return { available: false, reason: "not-configured" };
 
-  const query = new URLSearchParams({ select: "amount_minor,currency", limit: "10000" });
+  const query = new URLSearchParams({
+    select: "amount_minor,currency",
+    currency: "eq.NGN",
+    limit: String(MAX_ROWS + 1),
+  });
   if (initiative) query.set("initiative", `eq.${initiative}`);
 
   try {
     const response = await fetch(`${config.url}/rest/v1/donations?${query.toString()}`, {
       headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, accept: "application/json" },
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
-    if (!response.ok) return null;
+    if (!response.ok) return { available: false, reason: "unavailable" };
+
     const rows = await response.json() as { amount_minor?: number; currency?: string }[];
-    if (!Array.isArray(rows) || rows.length === 0) return null;
-    const currency = rows[0]?.currency || "NGN";
+    if (!Array.isArray(rows)) return { available: false, reason: "unavailable" };
+
+    // More rows than we are prepared to sum: report unavailable, never partial.
+    if (rows.length > MAX_ROWS) return { available: false, reason: "unavailable" };
+
     const totalMinor = rows.reduce((sum, row) => sum + (typeof row.amount_minor === "number" ? row.amount_minor : 0), 0);
-    return { currency, totalMinor, donationCount: rows.length, updatedAt: new Date().toISOString() };
+    // An empty table is a known zero, which is different from an unknown total.
+    return { available: true, totalMinor, currency: "NGN", donationCount: rows.length, updatedAt: new Date().toISOString() };
   } catch {
-    return null;
+    return { available: false, reason: "unavailable" };
   }
 }

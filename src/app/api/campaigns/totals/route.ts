@@ -1,30 +1,26 @@
 import { NextResponse } from "next/server";
-import { getCampaignTotals, persistenceConfigured } from "@/lib/donations";
+import { getCampaignTotals } from "@/lib/donations";
 
 export const runtime = "nodejs";
-export const revalidate = 60;
 
 /**
  * Campaign totals, derived only from persisted verified donations.
  *
- * When no durable store is configured this returns `available: false` with a
- * null total rather than a zero or a guess, so the UI can say the figure is
- * unavailable instead of implying that nothing has been raised.
+ * `available: true` with a zero total means the store was queried and there are
+ * genuinely no donations yet. `available: false` means the figure could not be
+ * established, so the UI must say it is unavailable rather than implying that
+ * nothing has been raised.
  */
 export async function GET() {
   const totals = await getCampaignTotals("REFI Play for Impact");
 
-  if (!persistenceConfigured()) {
+  if (!totals.available) {
+    const message = totals.reason === "not-configured"
+      ? "Donation storage is not configured yet, so campaign totals are not available."
+      : "Campaign totals could not be read from the donation store, so no figure is being reported.";
     return NextResponse.json(
-      { available: false, total: null, currency: null, donationCount: null, message: "Donation storage is not configured yet, so campaign totals are not available." },
+      { available: false, total: null, currency: null, donationCount: null, message },
       { headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
-  if (totals === null) {
-    return NextResponse.json(
-      { available: false, total: null, currency: null, donationCount: null, message: "No verified donations have been recorded yet." },
-      { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } },
     );
   }
 

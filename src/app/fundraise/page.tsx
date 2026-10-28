@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, HeartHandshake, Trophy, Users } from "lucide-react";
 import { SiteFooter, SiteHeader } from "../_components/site-chrome";
-import { getCampaignTotals, persistenceConfigured } from "@/lib/donations";
+import { getCampaignTotals } from "@/lib/donations";
 import styles from "../engagement.module.css";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +12,7 @@ export const dynamic = "force-dynamic";
  * than rendering a zero or an invented total.
  */
 export default async function FundraisePage() {
-  const configured = persistenceConfigured();
-  const totals = configured ? await getCampaignTotals("REFI Play for Impact") : null;
+  const totals = await getCampaignTotals("REFI Play for Impact");
 
   return (
     <main className={styles.shell}>
@@ -33,7 +32,7 @@ export default async function FundraisePage() {
         <div className={styles.container}>
           <div className={styles.card} style={{ marginBottom: 28 }}>
             <div className={styles.eyebrow} style={{ color: "var(--refi-blue-700)" }}>Campaign status</div>
-            {totals ? (
+            {totals.available ? (
               <>
                 <h2 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 44, lineHeight: 1.04 }}>
                   {formatMoney(totals.totalMinor, totals.currency)} raised
@@ -44,9 +43,9 @@ export default async function FundraisePage() {
               <>
                 <h2 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 40, lineHeight: 1.04 }}>Campaign totals are not available yet.</h2>
                 <p>
-                  {configured
-                    ? "No verified donations have been recorded for this campaign yet, so there is no total to report."
-                    : "Donation storage is not configured on this deployment yet, so the Foundation is not publishing a fundraising total."}
+                  {totals.reason === "not-configured"
+                    ? "Donation storage is not configured on this deployment yet, so the Foundation is not publishing a fundraising total."
+                    : "The donation store could not be read, so no fundraising total is being reported."}
                 </p>
               </>
             )}

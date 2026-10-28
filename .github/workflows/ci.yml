@@ -41,3 +41,8 @@ jobs:
       # published stories included, scheduled stories excluded, canonical URLs.
       - name: Verify sitemap
         run: node scripts/verify-sitemap.mjs
+
+      # Drives a real production server against mock Paystack and Supabase
+      # services, so no real payment is created and no real data is touched.
+      - name: Verify donation integrity
+        run: node scripts/verify-donations.mjs
