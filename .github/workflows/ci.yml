@@ -41,3 +41,8 @@ jobs:
       # published stories included, scheduled stories excluded, canonical URLs.
       - name: Verify sitemap
         run: node scripts/verify-sitemap.mjs
+
+      # Drives a real production server against a local mock provider, so the
+      # free-tier safeguards are exercised without spending real API quota.
+      - name: Verify live feed safeguards
+        run: node scripts/verify-live-feed.mjs
