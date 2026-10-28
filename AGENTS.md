@@ -88,6 +88,37 @@ confirm the **deployed** site: fetch the live URL, check the rendered HTML and
 response headers, and load it in a browser to confirm hydration and client-side
 navigation still work.
 
+## Live football feed (PR #22 branch)
+
+`/matches` renders a live-score feed backed by API-Football. The provider's free
+tier is metered per day, so the feed is built around not spending requests
+carelessly. Do not undo any of the following:
+
+- **No short `revalidate` on the route.** `revalidate = 30` is 2,880 requests a
+  day on its own, which exhausts a free-tier allowance within the first hour of
+  a match day. The upstream call is cached for `REFRESH_SECONDS` (120) in
+  `src/lib/football/live.ts`, and the route response is cacheable for the same
+  window, so many visitors and repeated polls share one provider request.
+- **The daily ceiling comes from the provider, not a guess.** `live.ts` reads
+  `x-ratelimit-requests-limit` / `-current` from the provider's response headers
+  and applies a 0.9 safety margin. Do not replace this with a hardcoded number:
+  the real limit depends on the account plan, which is an owner-side fact.
+  `LIVE_SCORE_DAILY_BUDGET` overrides it when an operator sets it explicitly,
+  and takes precedence over the reported value.
+- **Single-flight is load-bearing.** `fetchLiveMatches()` shares one in-flight
+  promise, so concurrent cache misses collapse into one upstream call. Removing
+  it lets a traffic burst stampede the provider.
+- **There are no automatic retries.** A failure must not spend more of the
+  remaining allowance. A `429` is treated as definitive and marks the rest of
+  the day as spent instead of probing again.
+- **The client poll interval is not the cost driver.** Polling re-reads a cached
+  feed, so `POLL_MS` can stay short without costing provider requests. Polling
+  also pauses while the tab is hidden.
+- **Test with `npm run verify:live-feed`, never the real provider.**
+  `FOOTBALL_API_BASE` points the feed at a local mock, and
+  `FOOTBALL_REFRESH_SECONDS` lowers the cache window so the budget guard can be
+  exercised deterministically. Both exist for testing only.
+
 ## Vercel
 
 Preview deployments sit behind Vercel Authentication (SSO), so previews cannot
