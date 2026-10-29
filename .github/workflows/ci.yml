@@ -41,3 +41,14 @@ jobs:
       # published stories included, scheduled stories excluded, canonical URLs.
       - name: Verify sitemap
         run: node scripts/verify-sitemap.mjs
+
+      # Drives a real production server against mock Paystack and Supabase
+      # services, so no real payment is created and no real data is touched.
+      - name: Verify donation integrity
+        run: node scripts/verify-donations.mjs
+
+      # Checks the pure game rules and then every Games for Charity route on a
+      # running server: all four games playable, scores never presented as
+      # donations, and untrusted score submissions rejected and never stored.
+      - name: Verify games
+        run: node scripts/verify-games.mjs

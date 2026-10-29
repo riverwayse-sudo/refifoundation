@@ -88,6 +88,79 @@ confirm the **deployed** site: fetch the live URL, check the rendered HTML and
 response headers, and load it in a browser to confirm hydration and client-side
 navigation still work.
 
+## Donations and payments (PR #1 branch)
+
+Donation handling lives in `src/lib/paystack.ts`, `src/lib/donations.ts` and the
+`/api/paystack/*` routes. Donor money is involved, so these rules are not
+optional:
+
+- **The browser never decides a donation is successful.** The success page and
+  the game read the status from Paystack on the server. The `?reference=` in the
+  URL is only an identifier, never proof of payment.
+- **The amount is verified, not trusted.** `initializeTransaction()` records
+  `expected_amount_minor` in the transaction metadata, and
+  `verifyTransaction()` compares Paystack's amount and currency against it. A
+  mismatch fails verification. Do not remove this check or fall back to trusting
+  the event body's `amount`.
+- **Amounts are bounded server-side.** `validateDonationAmount()` enforces
+  `MIN_DONATION_MINOR` / `MAX_DONATION_MINOR` before any charge is attempted.
+- **The webhook signature is checked over the raw body** with HMAC-SHA512, then
+  the transaction is re-verified with Paystack. The event body's own `status` is
+  never trusted.
+- **Idempotency relies on the unique `reference`** plus
+  `resolution=ignore-duplicates`. Do not change this to `merge-duplicates`: a
+  replay would overwrite the row and be reported as a fresh insert, so a retried
+  webhook could be double-counted.
+- **A storage failure is never reported as a recorded donation.** `recorded` is
+  true only when a durable store accepted the row.
+- **Totals distinguish a known zero from an unknown figure.**
+  `getCampaignTotals()` returns `available: true` with a total, or
+  `available: false` with a reason. Never collapse those into a zero, or an
+  unreachable database gets reported to donors as "nothing raised".
+- **Donor details stay out of public surfaces.** Totals select only
+  `amount_minor` and `currency`, and the migration enables RLS with no policy so
+  only the service role can read the table.
+- **Test with `npm run verify:donations`,** which drives a real server against
+  mock Paystack and Supabase services. `PAYSTACK_API_BASE` points at the mock so
+  no real payment is created.
+
+The `donations` table is created by `supabase/migrations/0001_donations.sql`,
+which is version-controlled but **not applied automatically**. Until an owner
+applies it, totals report as unavailable and the webhook reports a storage
+error, rather than pretending a donation was recorded.
+
+## Games for Charity (PR branch)
+
+  The hub lives at `/play`, with one playable route per game at `/play/[game]`.
+  Rules are pure functions in `src/lib/games/`; components in
+  `src/app/play/_components/` own presentation only.
+
+  - **`src/lib/games/catalog.ts` is the single source of truth.** The hub cards,
+    the per-game routes, the sitemap and the score validator all read from it, so
+    a game cannot be advertised on the hub without a definition, a score rule and
+    a real route. Add a game by adding a catalog entry and a component, not by
+    hardcoding a card.
+  - **Game scores and donations are separate concepts.** A score is a game result;
+    a donation is a verified Paystack payment; a fundraising total is the sum of
+    verified donations; a leaderboard ranks scores only. Never present a score as
+    money raised, a reward or a prize, and never make gameplay depend on payment.
+  - **Scores are untrusted until the server can verify them.** The games keep
+    scores in component state, on the player's device. `/api/scores` validates a
+    submission (game known, integer score inside the catalog bounds, believable
+    duration, completed round, sanitised display name with no email or link, body
+    size cap, per-client rate limit) and then **stores nothing**, because a
+    browser-reported score cannot be shown to be genuine without a server-issued
+    session. The public leaderboard therefore stays disabled. Do not enable
+    storage without first issuing and validating a session on the server.
+  - **`supabase/migrations/0002_game_scores.sql` is version-controlled but NOT
+    applied.** It has RLS enabled with no policy (service role only) and a unique
+    `(session_id, game)` for submission idempotency. Applying it alone does not
+    make scores trustworthy; the session work comes first.
+  - **Test with `npm run verify:games`.** It imports the pure rules directly and
+    then drives a real production server, asserting that all four games are
+    playable, that an unknown game is a 404, that scores are never presented as
+    donations, and that malformed or out-of-range submissions are rejected.
+
 ## Vercel
 
 Preview deployments sit behind Vercel Authentication (SSO), so previews cannot

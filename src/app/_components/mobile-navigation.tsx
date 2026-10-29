@@ -10,6 +10,7 @@ const links = [
   { href: "/impact", label: "Impact" },
   { href: "/events", label: "Events" },
   { href: "/stories", label: "Stories" },
+  { href: "/play", label: "Play" },
   { href: "/get-involved", label: "Get Involved" },
   { href: "/donate", label: "Donate" },
 ];
