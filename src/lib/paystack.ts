@@ -134,7 +134,17 @@ export async function verifyTransaction(
 
     const data = payload.data;
     const amountMinor = typeof data.amount === "number" ? data.amount : null;
-    const currency = data.currency ?? null;
+    const currency = typeof data.currency === "string" ? data.currency : null;
+
+    // A provider response must identify the exact transaction requested.
+    // Do not accept a different or missing reference as proof of this payment.
+    if (!data.reference || data.reference !== reference) {
+      return {
+        ok: false, reference: data.reference ?? null, amountMinor, currency,
+        status: data.status ?? null, paidAt: data.paid_at ?? null, donorEmail: data.customer?.email ?? null,
+        error: "The verified transaction reference does not match the requested reference.",
+      };
+    }
 
     if (data.status !== "success") {
       return {
@@ -150,18 +160,36 @@ export async function verifyTransaction(
     const expectedAmount = expected?.amountMinor ?? data.metadata?.expected_amount_minor ?? null;
     const expectedCurrency = expected?.currency ?? data.metadata?.expected_currency ?? null;
 
-    if (typeof expectedAmount === "number" && amountMinor !== expectedAmount) {
+    // A successful provider status is not enough: the original expected amount
+    // and currency must be present and valid, otherwise this reference cannot be
+    // safely attributed to the intended donation.
+    if (typeof expectedAmount !== "number" || !Number.isSafeInteger(expectedAmount) || expectedAmount <= 0) {
+      return {
+        ok: false, reference: data.reference, amountMinor, currency,
+        status: data.status, paidAt: data.paid_at ?? null, donorEmail: data.customer?.email ?? null,
+        error: "The expected donation amount could not be confirmed.",
+      };
+    }
+    if (typeof expectedCurrency !== "string" || expectedCurrency.trim().length !== 3) {
+      return {
+        ok: false, reference: data.reference, amountMinor, currency,
+        status: data.status, paidAt: data.paid_at ?? null, donorEmail: data.customer?.email ?? null,
+        error: "The expected payment currency could not be confirmed.",
+      };
+    }
+    if (typeof currency !== "string" || currency !== expectedCurrency) {
+      return {
+        ok: false, reference: data.reference, amountMinor, currency,
+        status: data.status, paidAt: data.paid_at ?? null, donorEmail: data.customer?.email ?? null,
+        error: "The payment currency does not match the expected currency.",
+      };
+    }
+
+    if (amountMinor !== expectedAmount) {
       return {
         ok: false, reference: data.reference ?? reference, amountMinor, currency,
         status: data.status ?? null, paidAt: data.paid_at ?? null, donorEmail: data.customer?.email ?? null,
         error: "The amount paid does not match the expected donation amount.",
-      };
-    }
-    if (expectedCurrency && currency && currency !== expectedCurrency) {
-      return {
-        ok: false, reference: data.reference ?? reference, amountMinor, currency,
-        status: data.status ?? null, paidAt: data.paid_at ?? null, donorEmail: data.customer?.email ?? null,
-        error: "The payment currency does not match the expected currency.",
       };
     }
     if (amountMinor === null || amountMinor <= 0) {
