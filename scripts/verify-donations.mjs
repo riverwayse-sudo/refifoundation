@@ -29,7 +29,8 @@ const REFERENCE = "refi-test-reference-0001";
 let txStatus = "success";
 let txAmount = CANONICAL_AMOUNT;
 let txCurrency = "NGN";
-const txMetadata = { expected_amount_minor: CANONICAL_AMOUNT, expected_currency: "NGN" };
+let txReference = REFERENCE;
+let txMetadata = { expected_amount_minor: CANONICAL_AMOUNT, expected_currency: "NGN" };
 
 // Mock Supabase state.
 let storeMode = "ok"; // ok | missing-table | error500 | unreachable
@@ -57,7 +58,7 @@ function startMockPaystack() {
             status: txStatus,
             amount: txAmount,
             currency: txCurrency,
-            reference: REFERENCE,
+            reference: txReference,
             paid_at: "2026-10-25T12:00:00.000Z",
             customer: { email: "donor@example.com" },
             metadata: txMetadata,
@@ -225,7 +226,24 @@ async function main() {
   check("currency mismatch is not confirmed", !(await html(site.origin, `/donate/success?reference=${REFERENCE}`)).includes("Donation confirmed."), "mismatch rejected");
   txCurrency = "NGN";
 
-  // 5. The verify endpoint reports truthfully and leaks nothing.
+  // 5. Missing expected transaction metadata must fail closed.
+  delete txMetadata.expected_amount_minor;
+  check("missing expected amount metadata is not confirmed", !(await html(site.origin, `/donate/success?reference=${REFERENCE}`)).includes("Donation confirmed."), "missing expectation rejected");
+  txMetadata.expected_amount_minor = CANONICAL_AMOUNT;
+
+  delete txMetadata.expected_currency;
+  check("missing expected currency metadata is not confirmed", !(await html(site.origin, `/donate/success?reference=${REFERENCE}`)).includes("Donation confirmed."), "missing expectation rejected");
+  txMetadata.expected_currency = "NGN";
+
+  txCurrency = "";
+  check("missing returned currency is not confirmed", !(await html(site.origin, `/donate/success?reference=${REFERENCE}`)).includes("Donation confirmed."), "missing currency rejected");
+  txCurrency = "NGN";
+
+  txReference = "refi-different-reference";
+  check("mismatched returned reference is not confirmed", !(await html(site.origin, `/donate/success?reference=${REFERENCE}`)).includes("Donation confirmed."), "reference mismatch rejected");
+  txReference = REFERENCE;
+
+  // 6. The verify endpoint reports truthfully and leaks nothing.
   const verifyBody = await json(site.origin, `/api/paystack/verify?reference=${REFERENCE}`);
   check("verify endpoint reports the verified amount", verifyBody.ok === true && verifyBody.amount === CANONICAL_AMOUNT, `amount ${verifyBody.amount}`);
   check("verify endpoint never returns the secret", !JSON.stringify(verifyBody).includes(SECRET), "secret absent");
@@ -233,7 +251,7 @@ async function main() {
   const noRef = await fetch(`${site.origin}/api/paystack/verify`);
   check("verify without a reference is rejected", noRef.status === 400, `status ${noRef.status}`);
 
-  // 6. Initialize validates the amount server-side.
+  // 7. Initialize validates the amount server-side.
   const init = (payload) => fetch(`${site.origin}/api/paystack/initialize`, {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload),
   });
@@ -248,7 +266,7 @@ async function main() {
   check("initialize accepts a valid donation", initOk.status === 200 && Boolean(initOkBody.authorizationUrl), "started");
   check("initialize never returns the secret", !JSON.stringify(initOkBody).includes(SECRET), "secret absent");
 
-  // 7. Webhook signature validation over the raw body.
+  // 8. Webhook signature validation over the raw body.
   const event = { event: "charge.success", data: { reference: REFERENCE, status: "success" } };
   const rawBody = JSON.stringify(event);
 
@@ -258,30 +276,30 @@ async function main() {
   const tamperedBody = JSON.stringify({ event: "charge.success", data: { reference: REFERENCE, status: "success", amount: 1 } });
   check("tampered body with a valid signature is rejected", (await postWebhook(site.origin, tamperedBody, sign(rawBody))).status === 401, "rejected");
 
-  // 8. A valid webhook records exactly once.
+  // 9. A valid webhook records exactly once.
   storedRows = [];
   const good = await postWebhook(site.origin, rawBody, sign(rawBody));
   check("signed webhook is accepted", good.status === 200 && good.body.verified === true, JSON.stringify(good.body));
   check("first delivery is recorded", good.body.recorded === true, "recorded");
   check("exactly one row stored", storedRows.length === 1, `${storedRows.length} row(s)`);
 
-  // 9. A replayed webhook must not duplicate or inflate.
+  // 10. A replayed webhook must not duplicate or inflate.
   const replay = await postWebhook(site.origin, rawBody, sign(rawBody));
   check("replayed webhook is not recorded again", replay.body.recorded === false && replay.body.duplicate === true, JSON.stringify(replay.body));
   check("replay does not add a row", storedRows.length === 1, `${storedRows.length} row(s)`);
 
-  // 10. A non-charge.success event is ignored.
+  // 11. A non-charge.success event is ignored.
   const otherEvent = JSON.stringify({ event: "charge.failed", data: { reference: REFERENCE } });
   const ignored = await postWebhook(site.origin, otherEvent, sign(otherEvent));
   check("non-success event is ignored", ignored.body.ignored === "charge.failed", JSON.stringify(ignored.body));
 
-  // 11. A signed event that Paystack cannot confirm is not recorded.
+  // 12. A signed event that Paystack cannot confirm is not recorded.
   txStatus = "abandoned";
   const unverifiable = await postWebhook(site.origin, rawBody, sign(rawBody));
   check("unverifiable payment is not recorded", unverifiable.body.verified === false, JSON.stringify(unverifiable.body));
   txStatus = "success";
 
-  // 12. Totals distinguish a known zero from an unknown figure.
+  // 13. Totals distinguish a known zero from an unknown figure.
   storeMode = "ok";
   storedRows = [];
   const zero = await json(site.origin, "/api/campaigns/totals");
@@ -300,7 +318,7 @@ async function main() {
   const down = await json(site.origin, "/api/campaigns/totals");
   check("unreachable store reports unavailable, not zero", down.available === false && down.total === null, JSON.stringify({ available: down.available, total: down.total }));
 
-  // 13. A storage failure must never be reported as a recorded donation.
+  // 14. A storage failure must never be reported as a recorded donation.
   storeMode = "missing-table";
   storedRows = [];
   const missing = await postWebhook(site.origin, rawBody, sign(rawBody));
@@ -320,13 +338,13 @@ async function main() {
   check("fundraise page does not invent a total", !/[0-9][0-9,]*\s*raised/.test(fundraise.replace(/Campaign totals are not available yet\./g, "")), "no invented figure");
   await stopSite(site.child);
 
-  // 14. With no storage configured at all, totals stay unavailable.
+  // 15. With no storage configured at all, totals stay unavailable.
   site = await startSite({ PAYSTACK_SECRET_KEY: SECRET, PAYSTACK_API_BASE: `http://127.0.0.1:${paystackPort}` });
   const unconfigured = await json(site.origin, "/api/campaigns/totals");
   check("no storage configured reports unavailable", unconfigured.available === false && unconfigured.total === null, JSON.stringify({ available: unconfigured.available }));
   await stopSite(site.child);
 
-  // 15. With no Paystack key, payments report themselves as unconfigured.
+  // 16. With no Paystack key, payments report themselves as unconfigured.
   site = await startSite({ SUPABASE_URL: `http://127.0.0.1:${supabasePort}`, SUPABASE_SERVICE_ROLE_KEY: "k" });
   const noKeyVerify = await fetch(`${site.origin}/api/paystack/verify?reference=${REFERENCE}`);
   const noKeyBody = await noKeyVerify.json();
