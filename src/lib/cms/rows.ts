@@ -20,7 +20,7 @@ export function rowsToContentRecords(rows: CmsContentRow[]): Record<string, unkn
         ...data,
         slug: row.slug,
         published: row.published,
-        publishedAt: data.publishedAt ?? row.published_at ?? undefined,
+        publishedAt: data.publishedAt || row.published_at || undefined,
       };
     });
 }
