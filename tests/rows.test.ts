@@ -34,3 +34,13 @@ test("invalid row payloads are ignored", () => {
   assert.equal(records.length, 1);
   assert.equal(records[0].slug, "ok");
 });
+
+test("blank content publish date falls back to the database timestamp", () => {
+  const [record] = rowsToContentRecords([{
+    slug: "published-on-save",
+    data: { title: "Published", publishedAt: "" },
+    published: true,
+    published_at: "2026-11-06T10:00:00Z",
+  }]);
+  assert.equal(record.publishedAt, "2026-11-06T10:00:00Z");
+});
