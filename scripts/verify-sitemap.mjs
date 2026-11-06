@@ -3,8 +3,8 @@
 //
 // Runs the actual build and the actual route with temporary content, rather
 // than reimplementing the filter, so it exercises the same code path the
-// deployed site uses. Asserts that a published story is included, that a
-// scheduled story is not, and that every URL is the canonical origin.
+// deployed site uses. Asserts that published stories and CMS pages are included,
+// scheduled content is excluded, and every URL uses the canonical origin.
 
 import { spawn } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
