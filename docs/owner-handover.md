@@ -132,6 +132,16 @@ a CMS would let anyone request an account.
   this setup for time-critical launches or promise automatic publication at an
   exact minute. Publish time-sensitive material after its intended release time,
   or arrange a deployment at/after the scheduled time.
+- **Supporting pages** created under "Other pages" are published at
+  `/pages/<slug>` and included in the sitemap. The special slug `our-work`
+  manages the existing `/our-work` route instead; it is not duplicated under
+  `/pages/`. These pages are not automatically added to the main navigation.
+- **Web addresses are fixed after creation.** This avoids accidentally creating
+  duplicate published records when an existing slug is changed. To change a URL,
+  create a new item with the desired slug and save the old item as a draft.
+- **Image uploads** accept PNG, JPEG, WebP, AVIF and GIF files up to 4 MB. SVG
+  and files whose binary signature does not match the selected image format are
+  rejected.
 - **Impact figures require verification.** A figure is displayed only when marked
   verified. The editor screen cannot set this, on purpose, so an unverified number
   cannot be published by saving a form. **There is currently no in-app control for
