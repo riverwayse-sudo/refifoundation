@@ -11,7 +11,9 @@
     "verify:sitemap": "node scripts/verify-sitemap.mjs",
     "test:cms": "node --test \"tests/**/*.test.ts\"",
     "test:rls": "bash scripts/test-rls.sh",
-    "cms:snapshot": "node scripts/cms-snapshot.mjs"
+    "cms:snapshot": "node scripts/cms-snapshot.mjs",
+    "cms:import": "node scripts/cms-import.mjs",
+    "cms:restore": "node scripts/cms-restore.mjs"
   },
   "dependencies": {
     "lucide-react": "1.61.0",

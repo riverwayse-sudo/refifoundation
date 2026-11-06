@@ -1,3 +1,5 @@
+import "server-only";
+
 // Authentication and authorisation for the CMS dashboard.
 //
 // Uses Supabase's Auth REST API directly (no client library). Sessions are held in

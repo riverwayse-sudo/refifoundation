@@ -4,7 +4,12 @@
 // there is exactly one place in the TypeScript codebase that encodes them. The
 // database enforces the same rules in public.is_content_visible() (see
 // supabase/migrations/0001_cms_schema.sql), which is the authority for anything
-// read through the anon key. These functions guard the build-time read path.
+// read through the anon key. These functions also guard the JSON snapshot fallback.
+//
+// Snapshot files intentionally contain drafts for recovery. A missing "published"
+// property is tolerated for legacy Decap JSON records; an explicit false must always
+// hide the item. This distinction keeps old snapshots compatible without leaking
+// unpublished CMS records when Supabase is unavailable.
 
 export type ContentRecord = Record<string, unknown>;
 
@@ -29,11 +34,11 @@ export function isScheduled(value: unknown, now: number = Date.now()): boolean {
 /**
  * A story is public only once its publish date has passed.
  *
- * A story with no date is not public. This matches the behaviour of the previous
- * loader, whose isPast() helper returned false for an absent date, so moving to the
- * CMS does not change what appears on the site.
+ * A story with no date is not public. Explicit unpublished state is honoured for
+ * CMS snapshots; missing state remains compatible with legacy JSON content.
  */
 export function isPublishedStory(item: ContentRecord, now: number = Date.now()): boolean {
+  if (item.published === false) return false;
   return Boolean(text(item.title)) && Boolean(text(item.slug)) && isDue(item.publishedAt, now);
 }
 
@@ -45,11 +50,11 @@ export function isVisiblePage(item: ContentRecord, now: number = Date.now()): bo
 
 /**
  * An event is public when it is marked Published and has not yet started.
- * Past events drop off automatically, and a Draft or Cancelled event stays hidden
- * regardless of its date.
+ * Explicit unpublished state is honoured for CMS snapshots; legacy records without
+ * a top-level published property continue to use the status field.
  */
 export function isPublishedEvent(item: ContentRecord, now: number = Date.now()): boolean {
-  if (text(item.status) !== "Published") return false;
+  if (item.published === false || text(item.status) !== "Published") return false;
   const startsAt = text(item.startsAt);
   if (!startsAt) return false;
   const parsed = Date.parse(startsAt);
@@ -58,13 +63,16 @@ export function isPublishedEvent(item: ContentRecord, now: number = Date.now()):
 
 /**
  * An impact figure is public only when explicitly verified. Unverified figures must
- * never appear, since they may be unconfirmed claims about the Foundation's work.
+ * never appear. Explicit unpublished state also hides a verified item in snapshots.
  */
 export function isVerifiedMetric(item: ContentRecord): boolean {
-  return item.verified === true && Boolean(text(item.label)) && Boolean(text(item.value));
+  return item.published !== false &&
+    item.verified === true &&
+    Boolean(text(item.label)) &&
+    Boolean(text(item.value));
 }
 
-/** Projects are public when they have a title and a slug. */
+/** Projects are public when published and have a title and a slug. */
 export function isPublishedProject(item: ContentRecord): boolean {
-  return Boolean(text(item.title)) && Boolean(text(item.slug));
+  return item.published !== false && Boolean(text(item.title)) && Boolean(text(item.slug));
 }

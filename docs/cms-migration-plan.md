@@ -1,11 +1,14 @@
 # REFI CMS migration — architecture plan and decision record
 
-**Status:** awaiting approval. No implementation has started.
+**Status:** implementation exists in draft PR #20; owner approval and production
+acceptance are still pending.
 
-**Branch:** `docs/cms-migration-plan` (planning only)
+**Implementation:** `feat/cms-zero-cost-supabase` (draft PR #20), with audit
+corrections stacked in draft PR #24.
 
-This document answers section 10's "before implementation" requirement: proposed
-architecture, costs, migration plan, and blockers.
+This document remains the architecture decision record. It records the original
+options and the current Option B implementation; it is not a claim that the
+migration is still planning-only or approved for production.
 
 ---
 
@@ -119,16 +122,18 @@ Static for stable content (homepage copy, impact metrics), runtime for
 frequently-updated content (stories, events). More complex; two mental models to
 maintain.
 
-### Recommendation
+### Original recommendation (superseded by the current draft)
 
 **Option A**, because 3.6 is explicit and the client's core complaint is
 slow/blocked publishing. But this must be an owner decision, because Option A
 trades architectural simplicity for publishing speed, and the site is currently
 commendably simple.
 
-If the owner prefers minimum risk over seconds-fast publishing, **Option B is a
-legitimate reading of the brief** and I would recommend it instead. The wording
-of 3.6 is the only thing ruling it out.
+The current draft implementation follows **Option B** to preserve the existing
+static public-site architecture. It deliberately accepts a rebuild after publishing
+and does not provide automatic future-time publishing. This choice must be confirmed
+by the owner before production integration. Option A remains a separate future
+architecture change, not something to mix into this migration.
 
 ---
 
@@ -332,7 +337,7 @@ The free tier's limits are real and are handled rather than ignored:
 | Free-tier limit | Mitigation built |
 | --- | --- |
 | Project pauses after 7 days idle | Daily keep-alive endpoint (`/api/cms/cron/keep-alive`) plus a Vercel cron entry |
-| No automatic backups | `npm run cms:snapshot` writes all content to `content/` in Git, which is the recovery path |
+| No automatic backups | `npm run cms:snapshot` writes a private full-row backup under gitignored `.cms-backups/` and published-only JSON snapshots under `content/`; store the private backup in approved encrypted storage |
 | No leaked-password protection | Documented in the handover notes as a residual risk; passwords are owner-managed and few |
 | No session timeout | Sessions are short-lived cookies; the handover notes tell the owner to sign out on shared machines |
 | Free projects have limited compute | Content volume is tiny (a handful of records), so usage stays far inside the allowance |

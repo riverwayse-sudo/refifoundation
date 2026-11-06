@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isCmsAdmin, signIn } from "@/lib/cms/auth";
+import { clearSessionCookies, isCmsAdmin, signIn } from "@/lib/cms/auth";
 import { clientKey, rateLimit, resetRateLimit } from "@/lib/cms/rate-limit";
 
 export const runtime = "nodejs";
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
   // Authentication alone is not enough: the account must also be an authorised
   // administrator, otherwise a valid login would grant dashboard access.
   if (!(await isCmsAdmin(result.user.id))) {
+    await clearSessionCookies();
     return NextResponse.json(
       { error: "This account does not have CMS access. Ask an administrator to add you." },
       { status: 403, headers: { "Cache-Control": "no-store" } },

@@ -124,8 +124,24 @@ a CMS would let anyone request an account.
 - **Save draft** stores the item without showing it on the site.
 - **Publish** marks it live and asks the site to rebuild. The site updates a minute
   or two later.
-- **Scheduling works.** An item with a future date stays hidden until that date
-  passes. Events disappear automatically once they have been and gone.
+- **Future dates are editorial dates, not automatic timers.** The public site is
+  statically generated. A future-dated story or page stays hidden in the build made
+  when it is saved, and it will appear only after a later website rebuild runs after
+  its publish date. Events are included or excluded at build time; an event already
+  on the site can remain visible after it starts until another rebuild. Do not use
+  this setup for time-critical launches or promise automatic publication at an
+  exact minute. Publish time-sensitive material after its intended release time,
+  or arrange a deployment at/after the scheduled time.
+- **Supporting pages** created under "Other pages" are published at
+  `/pages/<slug>` and included in the sitemap. The special slug `our-work`
+  manages the existing `/our-work` route instead; it is not duplicated under
+  `/pages/`. These pages are not automatically added to the main navigation.
+- **Web addresses are fixed after creation.** This avoids accidentally creating
+  duplicate published records when an existing slug is changed. To change a URL,
+  create a new item with the desired slug and save the old item as a draft.
+- **Image uploads** accept PNG, JPEG, WebP, AVIF and GIF files up to 4 MB. SVG
+  and files whose binary signature does not match the selected image format are
+  rejected.
 - **Impact figures require verification.** A figure is displayed only when marked
   verified. The editor screen cannot set this, on purpose, so an unverified number
   cannot be published by saving a form. **There is currently no in-app control for
@@ -159,9 +175,15 @@ The free plan has **no automatic backups**. The recovery path is:
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
 ```
 
-This writes all content into the `content/` folder as plain files. Review and
-commit them. That copy in Git is what would be used to restore content after an
-accidental deletion, so it is worth running after any significant editing session.
+This writes two outputs: the individual collection JSON files under `content/` contain published content only and are safe for the public site's static fallback; the full backup, `.cms-backups/cms-backup.json`, contains every CMS row including drafts. **The GitHub repository is public: never commit the full backup.** Copy it to the Foundation's approved private/encrypted storage and restrict access to authorised operators. Commit only the published JSON snapshots.
+
+To restore all backed-up editorial records, first retrieve the backup from approved private storage and place it at `.cms-backups/cms-backup.json` in the local working copy. Confirm the target REFI Supabase project, then run:
+
+```bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:restore
+```
+
+Restore is a non-destructive upsert: it restores records in the backup, including their draft/published state, but does not delete rows that are absent from the backup. Run it only after confirming the target project and reviewing the backup.
 
 ### If sign-in fails
 
@@ -214,8 +236,11 @@ once. Please read before touching environment variables or hosting settings.
 
 ### Publishing content
 
-Once section 3 is done: sign in at `/admin`, edit, save. Drafts become pull
-requests; merging publishes.
+Once section 3 is done: sign in at `/admin`, edit, and choose **Save draft** or
+**Publish**. Publishing writes to Supabase and requests a Vercel rebuild; no GitHub
+pull request is involved in the editorial workflow. A successful deploy-hook
+request means a rebuild was requested, not that the deployment has finished or
+that every page has been visually verified.
 
 ### Restoring the site if a change breaks it
 
@@ -280,3 +305,30 @@ that on: repository **Settings → Rules → Rulesets**, create a rule targeting
 This does not conflict with the CMS. Drafts are committed to a `cms/*` branch and
 opened as a pull request, so normal publishing already goes through a pull
 request. Requiring one changes nothing about how content is written.
+
+ 
+
+### Initial content import
+
+After creating the REFI-specific Supabase project, applying
+`supabase/migrations/0001_cms_schema.sql`, and setting the server-side
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` values locally, run:
+
+```bash
+npm run cms:import
+```
+
+The import is repeatable and upserts by collection and slug; it does not delete
+database rows. It seeds the current homepage content as well as any records in
+the other JSON collections. Before running it against a CMS that already contains
+editorial work, take a snapshot and review the rows it will update. Never place the
+service-role key in a `NEXT_PUBLIC_*` variable or commit it to Git.
+
+### Scheduled publishing limitation
+
+The CMS does not currently schedule deployments at future publish times. The daily
+keep-alive cron only checks Supabase availability; it does not rebuild the website.
+Future-dated stories and pages require a later deployment after their date to appear.
+Events are filtered at build time, so an event already included in a deployment can
+remain visible after it starts. Automatic scheduling requires a separately approved
+scheduler or a change to the publishing architecture.

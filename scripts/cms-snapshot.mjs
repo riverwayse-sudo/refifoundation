@@ -1,21 +1,19 @@
 #!/usr/bin/env node
 /**
- * Writes a snapshot of published content into the `content/` directory.
+ * Creates two outputs from the CMS:
  *
- * Two purposes, both serving the zero-cost constraint:
+ * 1. .cms-backups/cms-backup.json contains ALL editorial rows, including drafts,
+ *    for recovery through npm run cms:restore. It is gitignored and must be stored privately.
+ * 2. content/*.json contains PUBLISHED rows only and is safe as the public site's
+ *    static fallback if Supabase is unavailable.
  *
- *  1. Recovery. Supabase's free tier has no automatic backups, so this is the
- *     safety net: a plain-text copy of all content, in Git, that can be restored
- *     after an accidental deletion. Run it after any significant edit, or on a
- *     schedule.
- *
- *  2. Fallback. The public site reads this snapshot when no backend is configured
- *     or when the backend is unreachable, so a paused project cannot break a build.
+ * Review the public snapshots before committing. Never commit the full backup;
+ * copy it to approved private storage because it may contain unpublished material.
  *
  * Usage: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
  */
 
-import { writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const url = (process.env.SUPABASE_URL ?? "").replace(/\/+$/, "");
@@ -26,7 +24,6 @@ if (!url || !key) {
   process.exit(1);
 }
 
-// Maps a collection to the file and top-level key the loaders expect.
 const TARGETS = [
   { collection: "stories", file: "stories.json", key: "stories" },
   { collection: "projects", file: "projects.json", key: "projects" },
@@ -36,58 +33,70 @@ const TARGETS = [
 ];
 
 const contentDir = path.join(process.cwd(), "content");
+const backupDir = path.join(process.cwd(), ".cms-backups");
 await mkdir(contentDir, { recursive: true });
+await mkdir(backupDir, { recursive: true });
 
 async function fetchCollection(collection) {
   const query = `content?collection=eq.${encodeURIComponent(collection)}&select=*&order=updated_at.asc`;
   const response = await fetch(`${url}/rest/v1/${query}`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` },
+    cache: "no-store",
   });
   if (!response.ok) {
     throw new Error(`${collection}: ${response.status} ${await response.text()}`);
   }
-  return response.json();
+  const rows = await response.json();
+  if (!Array.isArray(rows)) throw new Error(`${collection}: unexpected response format`);
+  return rows;
 }
 
-let failures = 0;
+function toSnapshotRecord(row) {
+  return {
+    ...row.data,
+    slug: row.slug,
+    published: row.published === true,
+    publishedAt: row.data.publishedAt || row.published_at || undefined,
+  };
+}
+
+// Fetch everything before writing any file. A failed collection must not leave a
+// mixture of old and new snapshots that could be mistaken for a complete backup.
+const collections = {};
+for (const name of ["home", ...TARGETS.map((target) => target.collection)]) {
+  collections[name] = await fetchCollection(name);
+}
+
+const backup = {
+  version: 1,
+  generatedAt: new Date().toISOString(),
+  collections,
+};
+await writeFile(
+  path.join(backupDir, "cms-backup.json"),
+  JSON.stringify(backup, null, 2) + "\n",
+  "utf8",
+);
+console.log("wrote .cms-backups/cms-backup.json (all editorial rows, including drafts; keep private)");
 
 for (const target of TARGETS) {
-  try {
-    const rows = await fetchCollection(target.collection);
-    const records = rows
-      .filter((row) => row.data && typeof row.data === "object")
-      .map((row) => ({
-        ...row.data,
-        published: row.published,
-        publishedAt: row.data.publishedAt ?? row.published_at ?? undefined,
-      }));
-    const payload = JSON.stringify({ [target.key]: records }, null, 2) + "\n";
-    await writeFile(path.join(contentDir, target.file), payload, "utf8");
-    console.log(`wrote content/${target.file} (${records.length} records)`);
-  } catch (error) {
-    failures += 1;
-    console.error(`failed to snapshot ${target.collection}: ${error.message}`);
-  }
+  const rows = collections[target.collection];
+  // The public fallback must never contain unpublished records. Visibility helpers
+  // still handle future dates, event status and metric verification at build time.
+  const records = rows.filter((row) => row.published === true).map(toSnapshotRecord);
+  const payload = JSON.stringify({ [target.key]: records }, null, 2) + "\n";
+  await writeFile(path.join(contentDir, target.file), payload, "utf8");
+  console.log(`wrote content/${target.file} (${records.length} published records)`);
 }
 
-// The home page is a singleton and keeps its own shape.
-try {
-  const rows = await fetchCollection("home");
-  if (rows.length > 0) {
-    const payload = JSON.stringify(rows[0].data, null, 2) + "\n";
-    await writeFile(path.join(contentDir, "home.json"), payload, "utf8");
-    console.log("wrote content/home.json");
-  } else {
-    console.log("no home record found; leaving content/home.json unchanged");
-  }
-} catch (error) {
-  failures += 1;
-  console.error(`failed to snapshot home: ${error.message}`);
+// Home is a singleton. Never replace the last known-good public homepage with a
+// draft or an empty result; the complete current row is already in cms-backup.json.
+const home = collections.home.find((row) => row.published === true);
+if (home) {
+  await writeFile(path.join(contentDir, "home.json"), JSON.stringify(home.data, null, 2) + "\n", "utf8");
+  console.log("wrote content/home.json (published homepage)");
+} else {
+  console.log("no published home row; preserved the existing public homepage snapshot");
 }
 
-if (failures > 0) {
-  console.error(`\n${failures} collection(s) failed. Nothing was deleted; existing files were left in place.`);
-  process.exit(1);
-}
-
-console.log("\nSnapshot complete. Review and commit the changes under content/.");
+console.log("\nSnapshot complete. Review and commit the public snapshots only. Keep the private backup outside Git and copy it to approved secure storage.");

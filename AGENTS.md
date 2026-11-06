@@ -13,7 +13,8 @@ npm run build
 npm run verify:sitemap # builds with temp content, asserts against live server
 npm run test:cms      # publishing rules, validation, docs consistency (Node built-in runner)
 npm run test:rls      # row-level security against real PostgreSQL (needs Docker)
-npm run cms:snapshot  # write published content into content/ (needs Supabase credentials)
+npm run cms:snapshot  # full editorial backup + public-only snapshots (needs credentials)
+npm run cms:restore   # non-destructive restore from content/cms-backup.json (needs credentials)
 npm audit
 ```
 
@@ -31,10 +32,10 @@ policies are genuinely exercised in CI rather than skipped.
 
 `scripts/verify-sitemap.mjs` builds with temporary content and asserts against
 the running server, so it exercises the real route rather than reimplementing
-the filter. It fails if a published story is missing, a scheduled story leaks
-in, or a URL is not the canonical origin, and it restores `content/stories.json`
-in a `finally` block. It binds to an OS-assigned free port so a stale server on
-a fixed port cannot be mistaken for the build under test.
+the filter. It fails if a published story or supporting CMS page is missing, if
+scheduled content leaks in, or if a URL is not the canonical origin. It restores
+both temporary content files in a `finally` block and binds to an OS-assigned free
+port so a stale server cannot be mistaken for the build under test.
 
 Branch protection is **not yet enabled** — applying it needs a token with the
 `administration` scope, which the agent's credential lacks (403 on both the
@@ -98,11 +99,22 @@ Replaced the previous Decap/GitHub editor. `public/admin/` and the
 - **Editor-supplied image URLs use `<img>`, not `next/image`.** They can point at
   any host, which `next/image` would reject against the remote allowlist at build
   time.
-- **SVG uploads are rejected on purpose.** SVG can carry scripts and is served from
-  the site's own origin, so allowing it would make image upload a stored XSS
-  vector. Raster formats only.
+- **SVG uploads are rejected on purpose.** SVG can carry active content. Media is
+  served from the Supabase storage origin, not the REFI website origin; keeping the
+  upload allow-list to raster formats still reduces the risk of unsafe active files.
+  The upload route also checks file signatures rather than trusting MIME headers,
+  and caps files at 4 MB to stay below the serverless request-body limit.
 - **Markdown is rendered by `react-markdown`**, which escapes raw HTML, so
   CMS-authored content cannot inject markup.
+- **Content destination links are validated server-side.** CTA and registration
+  links may be same-site paths or HTTPS URLs; script, data and protocol-relative
+  URLs are rejected.
+- **CMS secrets are server-only.** `config.ts`, `supabase.ts`, `auth.ts` and the
+  build-time content source import `server-only`; never move these modules into a
+  client component dependency graph.
+- **Saved content slugs are immutable in the editor.** Changing a slug is a
+  create-new-and-unpublish-old operation; do not re-enable in-place slug editing
+  without adding an atomic rename flow.
 - **The free tier pauses after 7 days idle.** A daily Vercel cron calls
   `/api/cms/cron/keep-alive`, guarded by `CRON_SECRET`. Free tier also has no
   automatic backups: `npm run cms:snapshot` writes content into `content/` as the
@@ -117,11 +129,10 @@ Replaced the previous Decap/GitHub editor. `public/admin/` and the
 `npm run test:cms` uses Node 24's built-in test runner with native TypeScript
 support, so no test framework is installed. Node requires explicit file extensions
 on relative imports in this mode, which is why `tsconfig.json` sets
-`allowImportingTsExtensions`. Tests import modules with **no relative imports and
-no JSON imports**; a test that pulls in `src/lib/content.ts` fails under plain Node
-because the app's extensionless imports cannot be resolved outside the bundler.
-That is why the publishing rules were extracted into their own dependency-free
-module rather than tested through the loader.
+`allowImportingTsExtensions`. Tests target pure modules with no runtime relative
+dependencies and no JSON imports; importing the full `src/lib/content.ts` loader
+would pull in the app's extensionless imports, which plain Node cannot resolve
+outside the Next.js bundler.
 
 ## Verification expectations
 

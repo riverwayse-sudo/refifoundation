@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/cms/auth";
 import { deployHookUrl } from "@/lib/cms/config";
@@ -73,12 +74,24 @@ export async function POST(request: Request) {
     publishAt?: unknown;
   };
 
-  if (typeof collection !== "string" || typeof slug !== "string" || !collection || !slug) {
-    return NextResponse.json({ error: "A content section and web address are required." }, { status: 400 });
+  const allowedCollections = ["home", "stories", "projects", "events", "impact_metrics", "pages"];
+  if (
+    typeof collection !== "string" ||
+    !allowedCollections.includes(collection) ||
+    typeof slug !== "string" ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ||
+    slug.length > 80
+  ) {
+    return NextResponse.json({ error: "A valid content section and web address are required." }, { status: 400 });
+  }
+
+  if (publishAt !== undefined && publishAt !== null && publishAt !== "" &&
+      (typeof publishAt !== "string" || Number.isNaN(Date.parse(publishAt)))) {
+    return NextResponse.json({ error: "The publish date is invalid." }, { status: 400 });
   }
 
   const publishedAt =
-    typeof publishAt === "string" && publishAt.trim() && !Number.isNaN(Date.parse(publishAt))
+    typeof publishAt === "string" && publishAt.trim()
       ? new Date(publishAt).toISOString()
       : new Date().toISOString();
 
@@ -98,6 +111,11 @@ export async function POST(request: Request) {
   if (result.data.length === 0) {
     return NextResponse.json({ error: "That item no longer exists." }, { status: 404 });
   }
+
+  // The Next.js Data Cache persists across deployments. Invalidate the tagged
+  // Supabase reads before requesting a new static build, or the build can reuse
+  // content from the previous deployment.
+  revalidateTag("cms-content", { expire: 0 });
 
   const deploy = await triggerDeploy();
 

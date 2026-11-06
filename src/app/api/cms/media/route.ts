@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/cms/auth";
 import { supabaseServiceRoleKey, supabaseUrl } from "@/lib/cms/config";
+import { hasImageSignature } from "@/lib/cms/media-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB, comfortably inside the free storage tier.
+const MAX_BYTES = 4 * 1024 * 1024; // Keep uploads below the serverless request-body ceiling.
 
-// Deliberately excludes image/svg+xml. SVG can carry embedded scripts, and files in
-// this bucket are served from the site's own origin, so allowing SVG would turn an
-// image upload into a stored cross-site-scripting vector. Raster formats only.
+// Deliberately excludes image/svg+xml. SVG can carry active content; keeping the
+// public media bucket to raster formats reduces the risk of unsafe active files.
+// The bucket is served from the Supabase storage origin, separate from the REFI site.
 const ALLOWED_TYPES: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -56,13 +57,21 @@ export async function POST(request: Request) {
 
   if (file.size > MAX_BYTES) {
     return NextResponse.json(
-      { error: "Images must be 5 MB or smaller." },
+      { error: "Images must be 4 MB or smaller." },
       { status: 400 },
     );
   }
 
   if (file.size === 0) {
     return NextResponse.json({ error: "That file is empty." }, { status: 400 });
+  }
+
+  const fileBuffer = await file.arrayBuffer();
+  if (!hasImageSignature(file.type, new Uint8Array(fileBuffer))) {
+    return NextResponse.json(
+      { error: "The file contents do not match the selected image format." },
+      { status: 400 },
+    );
   }
 
   // Timestamped path so an upload never silently replaces an existing file.
@@ -77,7 +86,7 @@ export async function POST(request: Request) {
         "Content-Type": file.type,
         "x-upsert": "false",
       },
-      body: await file.arrayBuffer(),
+      body: fileBuffer,
       cache: "no-store",
     });
 
