@@ -6,7 +6,7 @@ import { hasImageSignature } from "@/lib/cms/media-validation";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB, comfortably inside the free storage tier.
+const MAX_BYTES = 4 * 1024 * 1024; // Keep uploads below the serverless request-body ceiling.
 
 // Deliberately excludes image/svg+xml. SVG can carry embedded scripts, and files in
 // this bucket are served from the site's own origin, so allowing SVG would turn an
