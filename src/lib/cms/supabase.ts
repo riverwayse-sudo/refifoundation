@@ -51,6 +51,8 @@ export async function restRequest<T>(
     cacheMode?: RequestCache;
     /** Milliseconds before the request is abandoned. Defaults to 10s. */
     timeoutMs?: number;
+    /** Tags used to invalidate cached build-time content after an editorial publish. */
+    nextTags?: string[];
   },
 ): Promise<SupabaseResult<T>> {
   if (!supabaseUrl) {
@@ -71,6 +73,7 @@ export async function restRequest<T>(
       headers: headers(init.key, init.prefer ? { Prefer: init.prefer } : undefined),
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       cache: init.cacheMode ?? "no-store",
+      ...(init.nextTags ? { next: { tags: init.nextTags } } : {}),
       signal,
     });
 
@@ -111,7 +114,15 @@ export function readVisibleContent(
 ): Promise<SupabaseResult<ContentRow[]>> {
   const query = `content?collection=eq.${encodeURIComponent(collection)}&select=*`;
   // force-cache keeps this read out of the runtime path so the route stays static.
-  return restRequest<ContentRow[]>(query, { key: anonKey, signal, cacheMode: "force-cache" });
+  // The tag is explicitly invalidated by the publish route before the deploy hook
+  // runs; otherwise Next's Data Cache can survive deployments and serve stale CMS
+  // content even though a fresh build was triggered.
+  return restRequest<ContentRow[]>(query, {
+    key: anonKey,
+    signal,
+    cacheMode: "force-cache",
+    nextTags: ["cms-content"],
+  });
 }
 
 /** Service-role request used only by server routes that have already authorised the caller. */
