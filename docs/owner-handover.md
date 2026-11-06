@@ -175,9 +175,9 @@ The free plan has **no automatic backups**. The recovery path is:
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
 ```
 
-This writes two outputs under `content/`: `cms-backup.json` contains every CMS row, including drafts, and the individual collection JSON files contain published content only for the public site's static fallback. Review and commit both. The full backup may contain unpublished material, so keep repository access restricted to authorised people.
+This writes two outputs: the individual collection JSON files under `content/` contain published content only and are safe for the public site's static fallback; the full backup, `.cms-backups/cms-backup.json`, contains every CMS row including drafts. **The GitHub repository is public: never commit the full backup.** Copy it to the Foundation's approved private/encrypted storage and restrict access to authorised operators. Commit only the published JSON snapshots.
 
-To restore all backed-up editorial records into the correct REFI Supabase project, use:
+To restore all backed-up editorial records, first retrieve the backup from approved private storage and place it at `.cms-backups/cms-backup.json` in the local working copy. Confirm the target REFI Supabase project, then run:
 
 ```bash
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:restore
