@@ -12,12 +12,16 @@ import { createServer } from "node:net";
 import { setTimeout as sleep } from "node:timers/promises";
 
 const CONTENT = "content/stories.json";
+const PAGES = "content/pages.json";
 const CANONICAL = "https://www.refifoundation.com";
 
 const PUBLISHED_SLUG = "ci-sitemap-published";
 const SCHEDULED_SLUG = "ci-sitemap-scheduled";
+const PUBLISHED_PAGE_SLUG = "ci-sitemap-page";
+const SCHEDULED_PAGE_SLUG = "ci-sitemap-page-scheduled";
 
 const original = readFileSync(CONTENT, "utf8");
+const originalPages = readFileSync(PAGES, "utf8");
 let server;
 
 // Bind to port 0 and read back the assigned port, so the run never collides
@@ -67,6 +71,16 @@ async function main() {
   const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
   writeFileSync(
+    PAGES,
+    JSON.stringify({
+      pages: [
+        { title: "CI supporting page", slug: PUBLISHED_PAGE_SLUG, body: "Page body", published: true, publishedAt: past },
+        { title: "CI scheduled page", slug: SCHEDULED_PAGE_SLUG, body: "Page body", published: true, publishedAt: future },
+      ],
+    }, null, 2) + "\n",
+  );
+
+  writeFileSync(
     CONTENT,
     JSON.stringify(
       {
@@ -93,6 +107,8 @@ async function main() {
 
   assert(xml.includes(`${CANONICAL}/stories/${PUBLISHED_SLUG}`), "published story is in the sitemap");
   assert(!xml.includes(SCHEDULED_SLUG), "scheduled story is excluded from the sitemap");
+  assert(xml.includes(CANONICAL + "/pages/" + PUBLISHED_PAGE_SLUG), "published CMS page is in the sitemap");
+  assert(!xml.includes(SCHEDULED_PAGE_SLUG), "scheduled CMS page is excluded from the sitemap");
 
   const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   assert(urls.length > 0, "sitemap contains URLs");
@@ -116,4 +132,5 @@ try {
     }
   }
   writeFileSync(CONTENT, original);
+  writeFileSync(PAGES, originalPages);
 }
