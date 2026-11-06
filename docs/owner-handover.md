@@ -280,3 +280,13 @@ that on: repository **Settings → Rules → Rulesets**, create a rule targeting
 This does not conflict with the CMS. Drafts are committed to a `cms/*` branch and
 opened as a pull request, so normal publishing already goes through a pull
 request. Requiring one changes nothing about how content is written.
+
+
+### Scheduled publishing limitation
+
+The current static-build publishing model does not provide a time-triggered deployment.
+A future-dated story or page is correctly hidden during the publish build, but it will
+not automatically appear at the scheduled time unless another deployment runs after
+that time. Editors should publish time-sensitive material after its intended release
+time, or arrange a deployment at/after the scheduled time. Do not promise automatic
+minute-accurate scheduled publishing under the current daily-cron, zero-cost setup.
