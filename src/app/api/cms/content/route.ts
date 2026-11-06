@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     slug: rawSlug,
     data: validated.value,
     published: published === true,
-    published_at: publishAtIso ?? validated.value.publishedAt ?? null,
+    published_at: publishAtIso ?? (typeof validated.value.publishedAt === "string" && validated.value.publishedAt.trim() ? validated.value.publishedAt : null),
     updated_by: admin.id,
   };
 
