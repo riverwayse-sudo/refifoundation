@@ -85,13 +85,27 @@ create trigger content_touch_updated_at
 -- Parse a JSON string into timestamptz without raising on malformed input.
 -- A bad value yields NULL, which the rules below treat as "not scheduled".
 create or replace function public.safe_ts(value jsonb) returns timestamptz
-language sql immutable as $$
-  select case
-    when value is null or jsonb_typeof(value) <> 'string' then null
-    when (value #>> '{}') ~ '^\d{4}-\d{2}-\d{2}' then (value #>> '{}')::timestamptz
-    else null
+language plpgsql immutable as $
+declare
+  raw_value text;
+begin
+  if value is null or jsonb_typeof(value) <> 'string' then
+    return null;
+  end if;
+
+  raw_value := value #>> '{}';
+  if raw_value !~ '^\d{4}-\d{2}-\d{2}' then
+    return null;
+  end if;
+
+  -- A malformed legacy/manual row must not make the entire public event query fail.
+  begin
+    return raw_value::timestamptz;
+  exception when others then
+    return null;
   end;
-$$;
+end;
+$;
 
 -- The single source of truth for "may the public see this row?".
 --
