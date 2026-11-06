@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
   if (file.size > MAX_BYTES) {
     return NextResponse.json(
-      { error: "Images must be 5 MB or smaller." },
+      { error: "Images must be 4 MB or smaller." },
       { status: 400 },
     );
   }
