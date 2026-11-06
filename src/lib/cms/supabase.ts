@@ -1,3 +1,5 @@
+import "server-only";
+
 // Minimal Supabase REST (PostgREST) client built on fetch.
 //
 // Deliberately does not use @supabase/supabase-js: the project's zero-cost rule
