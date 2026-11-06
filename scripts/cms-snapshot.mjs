@@ -33,7 +33,9 @@ const TARGETS = [
 ];
 
 const contentDir = path.join(process.cwd(), "content");
+const backupDir = path.join(process.cwd(), ".cms-backups");
 await mkdir(contentDir, { recursive: true });
+await mkdir(backupDir, { recursive: true });
 
 async function fetchCollection(collection) {
   const query = `content?collection=eq.${encodeURIComponent(collection)}&select=*&order=updated_at.asc`;
@@ -71,11 +73,11 @@ const backup = {
   collections,
 };
 await writeFile(
-  path.join(contentDir, "cms-backup.json"),
+  path.join(backupDir, "cms-backup.json"),
   JSON.stringify(backup, null, 2) + "\n",
   "utf8",
 );
-console.log("wrote content/cms-backup.json (all editorial rows, including drafts)");
+console.log("wrote .cms-backups/cms-backup.json (all editorial rows, including drafts; keep private)");
 
 for (const target of TARGETS) {
   const rows = collections[target.collection];
@@ -97,4 +99,4 @@ if (home) {
   console.log("no published home row; preserved the existing public homepage snapshot");
 }
 
-console.log("\nSnapshot complete. Review and commit both the public snapshots and the internal backup.");
+console.log("\nSnapshot complete. Review and commit the public snapshots only. Keep the private backup outside Git and copy it to approved secure storage.");
