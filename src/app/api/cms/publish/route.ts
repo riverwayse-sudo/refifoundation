@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/cms/auth";
 import { deployHookUrl } from "@/lib/cms/config";
@@ -98,6 +99,11 @@ export async function POST(request: Request) {
   if (result.data.length === 0) {
     return NextResponse.json({ error: "That item no longer exists." }, { status: 404 });
   }
+
+  // The Next.js Data Cache persists across deployments. Invalidate the tagged
+  // Supabase reads before requesting a new static build, or the build can reuse
+  // content from the previous deployment.
+  revalidateTag("cms-content", "max");
 
   const deploy = await triggerDeploy();
 
