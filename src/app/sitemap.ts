@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/site";
-import { getPublishedStories } from "@/lib/content";
+import { getPublishedPages, getPublishedStories } from "@/lib/content";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteUrl;
-  const stories = await getPublishedStories();
+  const [stories, pages] = await Promise.all([getPublishedStories(), getPublishedPages()]);
 
   return [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
@@ -21,6 +21,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: story.publishedAt ? new Date(story.publishedAt) : new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.6,
+    })),
+    ...pages.map((page) => ({
+      url: `${baseUrl}/pages/${page.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
     })),
   ];
 }
