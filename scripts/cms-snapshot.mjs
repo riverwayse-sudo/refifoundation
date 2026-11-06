@@ -2,13 +2,13 @@
 /**
  * Creates two outputs from the CMS:
  *
- * 1. content/cms-backup.json contains ALL editorial rows, including drafts, for
- *    recovery through npm run cms:restore. It is not imported by the public site.
+ * 1. .cms-backups/cms-backup.json contains ALL editorial rows, including drafts,
+ *    for recovery through npm run cms:restore. It is gitignored and must be stored privately.
  * 2. content/*.json contains PUBLISHED rows only and is safe as the public site's
  *    static fallback if Supabase is unavailable.
  *
- * Review both outputs before committing. The full backup may contain unpublished
- * material and should be treated as internal content.
+ * Review the public snapshots before committing. Never commit the full backup;
+ * copy it to approved private storage because it may contain unpublished material.
  *
  * Usage: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
  */
