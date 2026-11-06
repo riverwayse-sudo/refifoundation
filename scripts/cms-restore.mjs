@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Restores all CMS rows from content/cms-backup.json.
+ * Restores all CMS rows from .cms-backups/cms-backup.json.
  *
  * This is a non-destructive upsert: records in the backup are restored, but rows
  * created after the backup are not deleted. Confirm the target project carefully.
@@ -19,7 +19,7 @@ if (!url || !key) {
   process.exit(1);
 }
 
-const file = path.join(process.cwd(), "content", "cms-backup.json");
+const file = path.join(process.cwd(), ".cms-backups", "cms-backup.json");
 const backup = JSON.parse(await readFile(file, "utf8"));
 const allowed = ["home", "stories", "projects", "events", "impact_metrics", "pages"];
 
