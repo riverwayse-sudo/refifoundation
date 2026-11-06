@@ -124,8 +124,14 @@ a CMS would let anyone request an account.
 - **Save draft** stores the item without showing it on the site.
 - **Publish** marks it live and asks the site to rebuild. The site updates a minute
   or two later.
-- **Scheduling works.** An item with a future date stays hidden until that date
-  passes. Events disappear automatically once they have been and gone.
+- **Future dates are editorial dates, not automatic timers.** The public site is
+  statically generated. A future-dated story or page stays hidden in the build made
+  when it is saved, and it will appear only after a later website rebuild runs after
+  its publish date. Events are included or excluded at build time; an event already
+  on the site can remain visible after it starts until another rebuild. Do not use
+  this setup for time-critical launches or promise automatic publication at an
+  exact minute. Publish time-sensitive material after its intended release time,
+  or arrange a deployment at/after the scheduled time.
 - **Impact figures require verification.** A figure is displayed only when marked
   verified. The editor screen cannot set this, on purpose, so an unverified number
   cannot be published by saving a form. **There is currently no in-app control for
@@ -214,8 +220,11 @@ once. Please read before touching environment variables or hosting settings.
 
 ### Publishing content
 
-Once section 3 is done: sign in at `/admin`, edit, save. Drafts become pull
-requests; merging publishes.
+Once section 3 is done: sign in at `/admin`, edit, and choose **Save draft** or
+**Publish**. Publishing writes to Supabase and requests a Vercel rebuild; no GitHub
+pull request is involved in the editorial workflow. A successful deploy-hook
+request means a rebuild was requested, not that the deployment has finished or
+that every page has been visually verified.
 
 ### Restoring the site if a change breaks it
 
@@ -301,9 +310,9 @@ service-role key in a `NEXT_PUBLIC_*` variable or commit it to Git.
 
 ### Scheduled publishing limitation
 
-The current static-build publishing model does not provide a time-triggered deployment.
-A future-dated story or page is correctly hidden during the publish build, but it will
-not automatically appear at the scheduled time unless another deployment runs after
-that time. Editors should publish time-sensitive material after its intended release
-time, or arrange a deployment at/after the scheduled time. Do not promise automatic
-minute-accurate scheduled publishing under the current daily-cron, zero-cost setup.
+The CMS does not currently schedule deployments at future publish times. The daily
+keep-alive cron only checks Supabase availability; it does not rebuild the website.
+Future-dated stories and pages require a later deployment after their date to appear.
+Events are filtered at build time, so an event already included in a deployment can
+remain visible after it starts. Automatic scheduling requires a separately approved
+scheduler or a change to the publishing architecture.
