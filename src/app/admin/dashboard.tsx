@@ -274,14 +274,33 @@ export function CmsDashboard({ email }: { email: string }) {
       }
 
       if (publish) {
-        await fetch("/api/cms/publish", {
+        const publishResponse = await fetch("/api/cms/publish", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ collection: active.key, slug, publishAt: editing.values.publishedAt }),
-        }).catch(() => undefined);
+        });
+        const publishPayload = (await publishResponse.json()) as {
+          error?: string;
+          rebuild?: { triggered?: boolean; detail?: string };
+        };
+
+        if (!publishResponse.ok) {
+          setStatus(
+            "Content was saved, but the publish step failed. The public website may not have updated; retry publishing or contact support. " +
+              (publishPayload.error ?? ""),
+          );
+        } else if (publishPayload.rebuild?.triggered) {
+          setStatus(publishPayload.rebuild.detail ?? "Published. The website rebuild has been requested.");
+        } else {
+          setStatus(
+            publishPayload.rebuild?.detail ??
+              "Content was saved, but the website rebuild was not confirmed. Check the deployment before announcing this update.",
+          );
+        }
+      } else {
+        setStatus("Saved as a draft.");
       }
 
-      setStatus(publish ? "Saved and published. The website will update shortly." : "Saved as a draft.");
       setEditing(null);
       reload(active.key);
     } catch {
