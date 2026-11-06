@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/cms/auth";
 import { supabaseServiceRoleKey, supabaseUrl } from "@/lib/cms/config";
+import { hasImageSignature } from "@/lib/cms/media-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,6 +66,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That file is empty." }, { status: 400 });
   }
 
+  const fileBuffer = await file.arrayBuffer();
+  if (!hasImageSignature(file.type, new Uint8Array(fileBuffer))) {
+    return NextResponse.json(
+      { error: "The file contents do not match the selected image format." },
+      { status: 400 },
+    );
+  }
+
   // Timestamped path so an upload never silently replaces an existing file.
   const path = `${Date.now()}-${safeName(file.name).replace(/\.[^.]+$/, "")}.${extension}`;
 
@@ -77,7 +86,7 @@ export async function POST(request: Request) {
         "Content-Type": file.type,
         "x-upsert": "false",
       },
-      body: await file.arrayBuffer(),
+      body: fileBuffer,
       cache: "no-store",
     });
 
