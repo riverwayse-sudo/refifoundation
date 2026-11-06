@@ -281,6 +281,23 @@ This does not conflict with the CMS. Drafts are committed to a `cms/*` branch an
 opened as a pull request, so normal publishing already goes through a pull
 request. Requiring one changes nothing about how content is written.
 
+ 
+
+### Initial content import
+
+After creating the REFI-specific Supabase project, applying
+`supabase/migrations/0001_cms_schema.sql`, and setting the server-side
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` values locally, run:
+
+```bash
+npm run cms:import
+```
+
+The import is repeatable and upserts by collection and slug; it does not delete
+database rows. It seeds the current homepage content as well as any records in
+the other JSON collections. Before running it against a CMS that already contains
+editorial work, take a snapshot and review the rows it will update. Never place the
+service-role key in a `NEXT_PUBLIC_*` variable or commit it to Git.
 
 ### Scheduled publishing limitation
 
