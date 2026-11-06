@@ -60,7 +60,7 @@ for (const target of TARGETS) {
         ...row.data,
         slug: row.slug,
         published: row.published,
-        publishedAt: row.data.publishedAt ?? row.published_at ?? undefined,
+        publishedAt: row.data.publishedAt || row.published_at || undefined,
       }));
     const payload = JSON.stringify({ [target.key]: records }, null, 2) + "\n";
     await writeFile(path.join(contentDir, target.file), payload, "utf8");
