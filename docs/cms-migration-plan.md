@@ -337,7 +337,7 @@ The free tier's limits are real and are handled rather than ignored:
 | Free-tier limit | Mitigation built |
 | --- | --- |
 | Project pauses after 7 days idle | Daily keep-alive endpoint (`/api/cms/cron/keep-alive`) plus a Vercel cron entry |
-| No automatic backups | `npm run cms:snapshot` writes all content to `content/` in Git, which is the recovery path |
+| No automatic backups | `npm run cms:snapshot` writes a private full-row backup under gitignored `.cms-backups/` and published-only JSON snapshots under `content/`; store the private backup in approved encrypted storage |
 | No leaked-password protection | Documented in the handover notes as a residual risk; passwords are owner-managed and few |
 | No session timeout | Sessions are short-lived cookies; the handover notes tell the owner to sign out on shared machines |
 | Free projects have limited compute | Content volume is tiny (a handful of records), so usage stays far inside the allowance |
