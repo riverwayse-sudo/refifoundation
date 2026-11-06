@@ -122,7 +122,7 @@ Static for stable content (homepage copy, impact metrics), runtime for
 frequently-updated content (stories, events). More complex; two mental models to
 maintain.
 
-### Recommendation
+### Original recommendation (superseded by the current draft)
 
 **Option A**, because 3.6 is explicit and the client's core complaint is
 slow/blocked publishing. But this must be an owner decision, because Option A
