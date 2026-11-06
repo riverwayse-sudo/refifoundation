@@ -234,6 +234,11 @@ begin
   -- Malformed dates must not raise; they should simply not be treated as visible.
   select public.is_content_visible('events', '{"status":"Published","startsAt":"not-a-date"}'::jsonb, true, now()) into ok;
   if ok then raise exception 'FAIL: malformed startsAt must not be visible'; end if;
+
+  -- This value matches the date prefix but is not a valid calendar timestamp.
+  -- safe_ts must return NULL rather than raising and breaking the whole query.
+  select public.is_content_visible('events', '{"status":"Published","startsAt":"2026-99-99T00:00:00Z"}'::jsonb, true, now()) into ok;
+  if ok then raise exception 'FAIL: impossible calendar date must not be visible'; end if;
 end $$;
 
 \echo 'ALL RLS TESTS PASSED'
