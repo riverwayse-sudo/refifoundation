@@ -95,7 +95,8 @@ export async function getPublishedPage(slug: string): Promise<PublishedPage | nu
 export async function getPublishedPages(): Promise<PublishedPage[]> {
   const source = await loadContentSource();
   return records({ pages: source.pages }, "pages")
-    .filter((item) => isVisiblePage(item))
+    // /our-work is the existing public route; do not emit a duplicate /pages/our-work URL.
+    .filter((item) => text(item.slug) !== "our-work" && isVisiblePage(item))
     .map((item) => ({
       title: text(item.title),
       slug: text(item.slug),
