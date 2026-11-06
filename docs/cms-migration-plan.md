@@ -1,11 +1,14 @@
 # REFI CMS migration — architecture plan and decision record
 
-**Status:** awaiting approval. No implementation has started.
+**Status:** implementation exists in draft PR #20; owner approval and production
+acceptance are still pending.
 
-**Branch:** `docs/cms-migration-plan` (planning only)
+**Implementation:** `feat/cms-zero-cost-supabase` (draft PR #20), with audit
+corrections stacked in draft PR #24.
 
-This document answers section 10's "before implementation" requirement: proposed
-architecture, costs, migration plan, and blockers.
+This document remains the architecture decision record. It records the original
+options and the current Option B implementation; it is not a claim that the
+migration is still planning-only or approved for production.
 
 ---
 
@@ -126,9 +129,11 @@ slow/blocked publishing. But this must be an owner decision, because Option A
 trades architectural simplicity for publishing speed, and the site is currently
 commendably simple.
 
-If the owner prefers minimum risk over seconds-fast publishing, **Option B is a
-legitimate reading of the brief** and I would recommend it instead. The wording
-of 3.6 is the only thing ruling it out.
+The current draft implementation follows **Option B** to preserve the existing
+static public-site architecture. It deliberately accepts a rebuild after publishing
+and does not provide automatic future-time publishing. This choice must be confirmed
+by the owner before production integration. Option A remains a separate future
+architecture change, not something to mix into this migration.
 
 ---
 
