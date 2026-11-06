@@ -85,7 +85,7 @@ create trigger content_touch_updated_at
 -- Parse a JSON string into timestamptz without raising on malformed input.
 -- A bad value yields NULL, which the rules below treat as "not scheduled".
 create or replace function public.safe_ts(value jsonb) returns timestamptz
-language plpgsql immutable as $func$
+language plpgsql stable as $func$
 declare
   raw_value text;
 begin
