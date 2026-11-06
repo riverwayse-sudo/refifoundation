@@ -92,7 +92,13 @@ export async function POST(request: Request) {
     const existing = await serviceRequest<Array<{ data: Record<string, unknown> }>>(
       `content?collection=eq.impact_metrics&slug=eq.${encodeURIComponent(rawSlug)}&select=data&limit=1`,
     );
-    if (existing.ok && existing.data.length > 0 && existing.data[0].data?.verified === true) {
+    if (!existing.ok) {
+      return NextResponse.json(
+        { error: "Could not verify the existing impact figure before saving. Please try again." },
+        { status: 502, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    if (existing.data.length > 0 && existing.data[0].data?.verified === true) {
       validated.value.verified = true;
     }
   }
