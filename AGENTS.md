@@ -13,7 +13,8 @@ npm run build
 npm run verify:sitemap # builds with temp content, asserts against live server
 npm run test:cms      # publishing rules, validation, docs consistency (Node built-in runner)
 npm run test:rls      # row-level security against real PostgreSQL (needs Docker)
-npm run cms:snapshot  # write published content into content/ (needs Supabase credentials)
+npm run cms:snapshot  # full editorial backup + public-only snapshots (needs credentials)
+npm run cms:restore   # non-destructive restore from content/cms-backup.json (needs credentials)
 npm audit
 ```
 
