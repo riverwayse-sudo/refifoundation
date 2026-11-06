@@ -1,3 +1,5 @@
+import "server-only";
+
 // Configuration for the Git-free CMS backend.
 //
 // The CMS uses Supabase's REST API directly (no client library), so the project
