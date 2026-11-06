@@ -63,9 +63,7 @@ function rowFor(collection, item, index) {
     published = Boolean(publishedAt);
   }
   if (collection === "pages") {
-    publishedAt = typeof item.publishedAt === "string" && item.publishedAt.trim()
-      ? new Date(item.publishedAt).toISOString()
-      : null;
+    publishedAt = dateOrNull(item.publishedAt, `${collection}/${slug}`);
     published = item.published === true;
   }
   if (collection === "events") published = item.status === "Published";
