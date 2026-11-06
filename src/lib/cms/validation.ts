@@ -17,6 +17,18 @@ function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/** Allows same-site paths and HTTPS destinations, but rejects script/data URLs. */
+export function isSafeLink(value: unknown): boolean {
+  const raw = str(value);
+  if (!raw) return true;
+  if (raw.startsWith("/") && !raw.startsWith("//")) return true;
+  try {
+    return new URL(raw).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 /** Parses a date-ish value to ISO, returning undefined for empty or invalid input. */
 export function toIsoOrUndefined(value: unknown): string | undefined {
   const raw = str(value);
@@ -106,6 +118,8 @@ export function validateContent(
       requireText(errors, input, "heroDescription", "Hero description");
       requireText(errors, input, "primaryCtaLabel", "Primary button label");
       requireText(errors, input, "primaryCtaUrl", "Primary button URL");
+      if (!isSafeLink(input.primaryCtaUrl)) errors.push("Primary button URL must be a site path or HTTPS URL.");
+      if (!isSafeLink(input.secondaryCtaUrl)) errors.push("Secondary button URL must be a site path or HTTPS URL.");
       optionalText(errors, input, "heroEyebrow", "Hero eyebrow");
       optionalText(errors, input, "secondaryCtaLabel", "Secondary button label");
       optionalText(errors, input, "secondaryCtaUrl", "Secondary button URL");
@@ -184,6 +198,7 @@ export function validateContent(
         errors.push("End date and time cannot be before the start.");
       }
       optionalText(errors, input, "summary", "Description");
+      if (!isSafeLink(input.registrationUrl)) errors.push("Registration link must be a site path or HTTPS URL.");
       if (errors.length) return { ok: false, errors };
 
       return {
