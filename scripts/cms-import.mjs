@@ -54,20 +54,21 @@ function rowFor(collection, item, index) {
     ? "home"
     : (slugify(item.slug) || slugify(item.title || item.label) || `${collection}-${index + 1}`);
   const data = { ...item, slug };
+  const explicitlyUnpublished = item.published === false;
   let published = false;
   let publishedAt = null;
 
-  if (collection === "home" || collection === "projects") published = true;
+  if (collection === "home" || collection === "projects") published = !explicitlyUnpublished;
   if (collection === "stories") {
     publishedAt = dateOrNull(item.publishedAt, `${collection}/${slug}`);
-    published = Boolean(publishedAt);
+    published = !explicitlyUnpublished && Boolean(publishedAt);
   }
   if (collection === "pages") {
-    publishedAt = dateOrNull(item.publishedAt, `${collection}/${slug}`);
     published = item.published === true;
+    publishedAt = dateOrNull(item.publishedAt, `${collection}/${slug}`);
   }
-  if (collection === "events") published = item.status === "Published";
-  if (collection === "impact_metrics") published = item.verified === true;
+  if (collection === "events") published = !explicitlyUnpublished && item.status === "Published";
+  if (collection === "impact_metrics") published = !explicitlyUnpublished && item.verified === true;
 
   return {
     collection,
