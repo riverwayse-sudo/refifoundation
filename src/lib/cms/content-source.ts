@@ -1,3 +1,5 @@
+import "server-only";
+
 // Loads content for the public site.
 //
 // Option B: the public site is statically generated, so content is read at BUILD
