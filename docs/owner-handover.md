@@ -175,9 +175,15 @@ The free plan has **no automatic backups**. The recovery path is:
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
 ```
 
-This writes all content into the `content/` folder as plain files. Review and
-commit them. That copy in Git is what would be used to restore content after an
-accidental deletion, so it is worth running after any significant editing session.
+This writes two outputs under `content/`: `cms-backup.json` contains every CMS row, including drafts, and the individual collection JSON files contain published content only for the public site's static fallback. Review and commit both. The full backup may contain unpublished material, so keep repository access restricted to authorised people.
+
+To restore all backed-up editorial records into the correct REFI Supabase project, use:
+
+```bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:restore
+```
+
+Restore is a non-destructive upsert: it restores records in the backup, including their draft/published state, but does not delete rows that are absent from the backup. Run it only after confirming the target project and reviewing the backup.
 
 ### If sign-in fails
 
