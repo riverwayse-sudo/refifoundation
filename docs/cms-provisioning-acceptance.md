@@ -299,22 +299,22 @@ editorial sessions and before any bulk operation:
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
 ~~~
 
-The command writes the database content into the repository's 'content/'
-directory. Review the diff carefully before committing it. Treat snapshots as
-sensitive operational records if the content includes unpublished drafts or
-personal information.
+The command writes two outputs:
 
-For a recovery from the committed JSON snapshot:
+- 'content/cms-backup.json' contains **all editorial rows, including drafts**, and is used by 'npm run cms:restore'. Treat it as internal material: it may contain unpublished announcements or other non-public content.
+- The individual 'content/*.json' files contain **published rows only** and are the safe static fallback used by the public website. An unpublished homepage never overwrites the last published homepage snapshot.
+
+Review both outputs carefully before committing. The full backup is stored in Git, so confirm the repository's access controls are appropriate for unpublished editorial content.
+
+For a full editorial recovery from the committed backup:
 
 1. Confirm the target Supabase project is the correct REFI project.
-2. Review the snapshot commit and the records that will be restored.
-3. Run 'npm run cms:import' using the approved service-role key.
-4. Confirm the restored rows in Supabase.
+2. Review 'content/cms-backup.json' and confirm its generated date and contents.
+3. Run 'npm run cms:restore' using the approved service-role key.
+4. Confirm the restored rows in Supabase, including draft/published state.
 5. Trigger a rebuild and verify the public site.
 
-The importer does not delete rows, so it is not a full database rollback tool.
-If records were deleted or changed in ways not represented in Git, stop and
-assess the recovery plan before writing more data.
+The restore command upserts every row in the backup but does not delete rows created after that backup. It is a recovery aid, not a destructive point-in-time rollback. The regular 'npm run cms:import' command is for the initial import from the public JSON files, not full editorial recovery.
 
 ## 11. Rollback and incident response
 
