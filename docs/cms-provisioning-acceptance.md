@@ -301,15 +301,15 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
 
 The command writes two outputs:
 
-- 'content/cms-backup.json' contains **all editorial rows, including drafts**, and is used by 'npm run cms:restore'. Treat it as internal material: it may contain unpublished announcements or other non-public content.
+- '.cms-backups/cms-backup.json' contains **all editorial rows, including drafts**, and is used by 'npm run cms:restore'. Treat it as internal material: it may contain unpublished announcements or other non-public content.
 - The individual 'content/*.json' files contain **published rows only** and are the safe static fallback used by the public website. An unpublished homepage never overwrites the last published homepage snapshot.
 
-Review both outputs carefully before committing. The full backup is stored in Git, so confirm the repository's access controls are appropriate for unpublished editorial content.
+Review both outputs carefully before committing. The repository is public. **Never commit the full backup or any unpublished editorial content to Git.** The backup is written under the gitignored '.cms-backups/' directory. Copy it to the Foundation's approved private/encrypted storage and restrict access to authorised operators.
 
 For a full editorial recovery from the committed backup:
 
 1. Confirm the target Supabase project is the correct REFI project.
-2. Review 'content/cms-backup.json' and confirm its generated date and contents.
+2. Retrieve the latest '.cms-backups/cms-backup.json' from the Foundation's approved private backup storage, then confirm its generated date and contents.
 3. Run 'npm run cms:restore' using the approved service-role key.
 4. Confirm the restored rows in Supabase, including draft/published state.
 5. Trigger a rebuild and verify the public site.
