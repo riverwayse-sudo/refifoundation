@@ -13,7 +13,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-const url = (process.env.SUPABASE_URL ?? "").replace(/\\/+$/, "");
+const url = (process.env.SUPABASE_URL ?? "").replace(/\/+$/, "");
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 if (!url || !key) {
@@ -22,14 +22,19 @@ if (!url || !key) {
 }
 
 const root = process.cwd();
-const now = Date.now();
-
 function slugify(value) {
   return String(value ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+function dateOrNull(value, source) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) throw new Error(`Invalid publish date in ${source}: ${value}`);
+  return new Date(timestamp).toISOString();
 }
 
 async function readJson(file) {
@@ -54,9 +59,7 @@ function rowFor(collection, item, index) {
 
   if (collection === "home" || collection === "projects") published = true;
   if (collection === "stories") {
-    publishedAt = typeof item.publishedAt === "string" && item.publishedAt.trim()
-      ? new Date(item.publishedAt).toISOString()
-      : null;
+    publishedAt = dateOrNull(item.publishedAt, `${collection}/${slug}`);
     published = Boolean(publishedAt);
   }
   if (collection === "pages") {
