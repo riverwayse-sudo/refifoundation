@@ -16,6 +16,7 @@ import {
   isValidSlug,
   toIsoOrUndefined,
   isFutureDate,
+  isSafeLink,
 } from "../src/lib/cms/validation.ts";
 
 test("normaliseSlug makes a URL-safe value", () => {
@@ -48,6 +49,14 @@ test("isFutureDate only accepts future ISO dates", () => {
   assert.equal(isFutureDate("2000-01-01T00:00:00Z"), false);
   assert.equal(isFutureDate("garbage"), false);
   assert.equal(isFutureDate(""), false);
+});
+
+test("content links reject script and protocol-relative URLs", () => {
+  assert.equal(isSafeLink("/donate"), true);
+  assert.equal(isSafeLink("https://example.org/register"), true);
+  assert.equal(isSafeLink("javascript:alert(1)"), false);
+  assert.equal(isSafeLink("//attacker.example/path"), false);
+  assert.equal(isSafeLink("data:text/html,hello"), false);
 });
 
 // --- stories -------------------------------------------------------------
@@ -231,4 +240,15 @@ test("over-long text is rejected rather than silently truncated", () => {
   });
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.errors.join(" "), /Story body must be/);
+});
+
+test("event registration links reject unsafe protocols", () => {
+  const result = validateContent("events", {
+    title: "Gala",
+    status: "Published",
+    startsAt: "2027-06-01T18:00:00Z",
+    registrationUrl: "javascript:alert(1)",
+  });
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.match(result.errors.join(" "), /Registration link must be/);
 });
