@@ -58,6 +58,7 @@ for (const target of TARGETS) {
       .filter((row) => row.data && typeof row.data === "object")
       .map((row) => ({
         ...row.data,
+        slug: row.slug,
         published: row.published,
         publishedAt: row.data.publishedAt ?? row.published_at ?? undefined,
       }));
