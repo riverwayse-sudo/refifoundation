@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
-
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 12_000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function jsonResponse(body: Record<string, unknown>, init: ResponseInit = {}): Response {
+  const headers = new Headers(init.headers);
+  headers.set("content-type", "application/json; charset=utf-8");
+  return new Response(JSON.stringify(body), { ...init, headers });
+}
+
 const TOPICS = new Set([
   "General enquiry",
   "Programme or community support",
@@ -69,7 +73,7 @@ async function readBoundedJson(request: Request): Promise<Record<string, unknown
 
 export async function POST(request: Request) {
   if (isRateLimited(request)) {
-    return NextResponse.json(
+    return jsonResponse(
       { error: "Too many enquiries have been submitted. Please wait a little and try again." },
       { status: 429, headers: { "Retry-After": "900" } },
     );
@@ -80,20 +84,20 @@ export async function POST(request: Request) {
     input = await readBoundedJson(request);
   } catch (error) {
     const tooLarge = error instanceof RangeError && error.message === "body-too-large";
-    return NextResponse.json(
+    return jsonResponse(
       { error: tooLarge ? "Your message is too large. Please shorten it and try again." : "Please submit a valid enquiry form." },
       { status: tooLarge ? 413 : 400 },
     );
   }
-  if (!input) return NextResponse.json({ error: "Please submit a valid enquiry form." }, { status: 400 });
-  if (clean(input.website, 200)) return NextResponse.json({ ok: true });
+  if (!input) return jsonResponse({ error: "Please submit a valid enquiry form." }, { status: 400 });
+  if (clean(input.website, 200)) return jsonResponse({ ok: true });
 
   const name = clean(input.name, 100);
   const email = clean(input.email, 254);
   const topic = clean(input.topic, 100);
   const message = clean(input.message, 4000);
   if (!name || !EMAIL_PATTERN.test(email) || !TOPICS.has(topic) || message.length < 10) {
-    return NextResponse.json({ error: "Please check your name, email, topic and message, then try again." }, { status: 400 });
+    return jsonResponse({ error: "Please check your name, email, topic and message, then try again." }, { status: 400 });
   }
 
   const apiKey = process.env.BREVO_API_KEY;
@@ -101,7 +105,7 @@ export async function POST(request: Request) {
   const senderEmail = process.env.BREVO_SENDER_EMAIL;
   const senderName = process.env.BREVO_SENDER_NAME || "REFI Foundation";
   if (!apiKey || !recipient || !senderEmail) {
-    return NextResponse.json(
+    return jsonResponse(
       { error: "The enquiry service is not configured yet. Please email hello@refifoundation.org directly." },
       { status: 503 },
     );
@@ -128,10 +132,10 @@ export async function POST(request: Request) {
       signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) {
-      return NextResponse.json({ error: "We could not send your message right now. Please email hello@refifoundation.org directly." }, { status: 502 });
+      return jsonResponse({ error: "We could not send your message right now. Please email hello@refifoundation.org directly." }, { status: 502 });
     }
-    return NextResponse.json({ ok: true });
+    return jsonResponse({ ok: true });
   } catch {
-    return NextResponse.json({ error: "We could not send your message right now. Please email hello@refifoundation.org directly." }, { status: 502 });
+    return jsonResponse({ error: "We could not send your message right now. Please email hello@refifoundation.org directly." }, { status: 502 });
   }
 }
