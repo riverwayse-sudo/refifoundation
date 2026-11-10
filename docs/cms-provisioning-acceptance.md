@@ -3,7 +3,7 @@
 **Status:** Prepared for owner-led setup. This document does not mean a Supabase
 project has been created, connected, or accepted.
 
-**Related implementation:** draft PR #20, with audit corrections in draft PR #24.
+**Related implementation:** draft PR #20. The audit corrections from PR #24 have been integrated into the PR #20 feature branch.
 **Architecture:** Option B — Supabase-backed editor, static Next.js public site,
 JSON snapshot fallback, and a Vercel rebuild after publishing.
 
@@ -364,7 +364,4 @@ Record the tester, date, deployment URL/commit and evidence for each completed
 item. A green CI run or a Ready Vercel deployment is not a substitute for these
 checks.
 
-**Current state:** no REFI Supabase project has been provisioned, no credentials
-have been added to Vercel, no real administrator has been created, and no
-production acceptance test has been completed. Keep PRs #20 and #24 unmerged
-until the required review and owner acceptance are complete.
+**Current state:** CMS provisioning and production acceptance have not been verified from this repository. Confirm the dedicated REFI Supabase project reference and ownership directly in the approved Supabase account before applying migrations or changing hosting configuration. Do not infer that a project does not exist merely because it is not visible through a connected account. Credentials, administrator access, hosting environment variables and end-to-end production acceptance remain unverified here. Keep PR #20 unmerged until the required review and owner acceptance are complete. PR #24 has already been squash-merged into the PR #20 feature branch; it is not a separate production change.
