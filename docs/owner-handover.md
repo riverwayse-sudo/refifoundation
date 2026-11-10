@@ -43,11 +43,11 @@ supply, and shipping a half-working version would be misleading to visitors.
 
 | Item | Why it is held back | What unblocks it |
 |---|---|---|
-| CMS not yet connected | Built and tested, but no Supabase project has been created | Section 3 (owner action) |
-| Contact form | No email service configured; there is currently no contact page at all | Section 4 |
+| CMS not yet connected | CMS implementation is in draft PR #20; the dedicated REFI Supabase project and production configuration still need direct verification | Section 3 (verify project, configure and accept) |
+| Contact form | Implemented in draft PR #25; production merge, Brevo configuration, edge rate limiting and end-to-end delivery test remain outstanding | Section 4 |
 | Online donations | `/donate` is a static page; no payment provider is connected | Section 4 |
 | Sports match centre | Separate, separately-funded workstream | Not part of this brief |
-| Logo | The original asset has never been supplied | Section 5 |
+| Official logo | Assets and site integration are in draft PR #21; visual approval and merge remain outstanding | Section 5 |
 
 ## 3. The CMS
 
@@ -60,12 +60,14 @@ This replaces the earlier GitHub-based editor. The GitHub OAuth app and its
 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` settings are no longer used and can be
 removed from Vercel.
 
-### Status: built and verified, but not yet connected
+### Status: implementation in draft PR #20; live provisioning not verified
 
-Everything in this section has been built and tested. What has **not** happened is
-the one step only the owner can take: creating the Supabase project and adding its
-settings to Vercel. Until that is done, `/admin` shows a clear "not connected"
-message rather than a sign-in form that cannot work.
+The CMS implementation and automated checks are in the feature branch. The dedicated
+REFI Supabase project, its ownership, schema, administrator allow-list and production
+environment variables have not been verified from the available connected account.
+Do not create another project until the owner confirms whether the REFI-specific project
+created earlier is the intended CMS project. Until the credentials and migration are
+verified against that project, treat /admin as not accepted for production.
 
 ### What has been verified
 
@@ -85,8 +87,9 @@ granting a temporary permission, and confirming the suite caught both.
 
 ### What has not been verified
 
-The sign-in flow end to end, because it needs a real Supabase project. This is the
-last unproven step and it cannot be completed without the owner's project.
+The sign-in flow end to end, because it requires verified access to the dedicated
+REFI Supabase project and its approved administrator. The project reference and
+credentials must be confirmed before any migration or environment change.
 
 ### Connecting it (owner action)
 
@@ -195,26 +198,32 @@ Restore is a non-destructive upsert: it restores records in the backup, includin
 
 ## 4. Contact form and donations
 
-Neither is implemented. This is intentional: a form that silently discards
-enquiries, or a donate button that cannot take payment, is worse than no form.
+### Contact form — implementation ready for review, not production accepted
 
-There is currently no contact page. The footer and Get Involved page link to
-`mailto:hello@refifoundation.org`, which works today.
+A contact page and server-side Brevo endpoint are in draft PR #25, based cleanly
+on current main. The endpoint validates input, bounds request bodies, escapes
+HTML, uses a honeypot and request timeout, and includes best-effort per-instance
+throttling. That in-memory limiter is not distributed protection; configure a hard
+rate limit at the hosting edge before production launch.
 
-To add a real contact form or donations, the owner needs to choose and fund a
-provider, then supply its credentials. Nothing is pre-wired for a specific
-provider, so there is no hidden dependency to remove.
+Before merging or announcing the form, verify the hosting environment contains
+BREVO_API_KEY, REFI_CONTACT_EMAIL, BREVO_SENDER_EMAIL and optional
+BREVO_SENDER_NAME; test successful delivery and failure handling; and complete
+mobile/desktop visual review. Until those checks pass, the existing
+mailto:hello@refifoundation.org fallback remains the reliable contact route.
+
+### Donations
+
+/donate remains a static information page. No payment provider is connected.
+Paystack work is deliberately held until the other website workstreams are closed.
 
 ## 5. The logo
 
-The official logo has never been supplied. The site currently uses a simple text
-mark (an "R" plus "REFI FOUNDATION") in the header and footer.
-
-The original artwork file is not in the repository, and it must not be
-recreated, redrawn, or substituted with a lookalike. An approximated logo would
-be worse than none. To finish this, send the original PNG file. Once it is
-available the work is small: place it in the header and footer, and generate the
-browser and mobile icons from it.
+The official logo files and their integration into the header, footer and browser
+icons are in draft PR #21. Its automated deployment check is green. The remaining
+step is visual review at desktop and mobile sizes, including checking that the
+emblem is not distorted or cropped, before merging. Do not replace the supplied
+artwork with a recreated lookalike.
 
 ## 6. Things the owner should know before changing settings
 
@@ -257,17 +266,17 @@ should read "RAISING • EMPOWERING • TRANSFORMING LIVES."
 
 | Item | Owner action needed |
 |---|---|
-| Connect the CMS | Create the Supabase project and add the five environment variables (section 3) |
-| Logo | Send the original PNG file (section 5) |
-| Contact form | Choose a provider and supply credentials (section 4) |
-| Donations | Choose a payment provider and supply credentials (section 4) |
-| Match centre | Separately funded workstream; not started |
+| Connect the CMS | Verify the dedicated REFI Supabase project, apply migration, configure hosting variables, and complete end-to-end acceptance (section 3) |
+| Logo | Visually review and approve draft PR #21 (section 5) |
+| Contact form | Review draft PR #25, configure Brevo, edge rate limiting and verify delivery (section 4) |
+| Donations | Payment integration remains deliberately last; no live payment flow |
+| Match centre | Draft PR #22; review scope, provider budget and visual behaviour before merge |
 | Branch protection | Turn on a `main` rule requiring a pull request and the `verify` check (see below) |
 | Story pages in sitemap | Fixed — published stories now appear in `sitemap.xml` |
 
-The remaining work is mostly configuration rather than development: confirming
-the CMS works end to end, supplying the logo, and choosing contact and donation
-providers. The logo integration is small once the file arrives.
+The remaining work is acceptance and configuration: verify the dedicated CMS backend,
+visually approve the logo integration, configure and test the contact endpoint, and
+make a separate scope decision on the Match Centre. Donations/Paystack remain last.
 
 ### Sitemap and indexing
 
