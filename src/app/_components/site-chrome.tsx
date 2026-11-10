@@ -11,7 +11,8 @@ export function SiteHeader() {
           <Link href="/our-work">Our Work</Link>
           <Link href="/impact">Impact</Link>
           <Link href="/events">Events</Link>
-          <Link href="/stories">Stories</Link>\n          <Link href="/contact">Contact</Link>
+          <Link href="/stories">Stories</Link>
+          <Link href="/contact">Contact</Link>
           <Link href="/get-involved">Get Involved</Link>
           <Link className="refi-support" href="/donate">Donate</Link>
         </nav>
