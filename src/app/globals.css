@@ -248,7 +248,9 @@ img { max-width: 100%; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
   .refi-hero-media img, .refi-reveal { animation: none; }
-}\n/* Contact page */
+}
+
+/* Contact page */
 .refi-contact { background: var(--refi-white); }
 .refi-contact-hero { padding: 150px 0 78px; background: var(--refi-blue-950); color: white; }
 .refi-contact-hero h1 { max-width: 800px; font-size: clamp(46px, 7vw, 78px); line-height: .98; letter-spacing: -.045em; margin: 18px 0; }
