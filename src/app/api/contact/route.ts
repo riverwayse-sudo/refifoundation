@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 12_000;
-const EMAIL_PATTERN = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function clean(value: unknown, maxLength: number): string {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
     "",
     "Message:",
     message,
-  ].join("\\n");
+  ].join("\n");
 
   try {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
         replyTo: { email, name },
         subject: `REFI website enquiry: ${topic}`,
         textContent,
-        htmlContent: `<h2>New REFI Foundation website enquiry</h2><p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Topic:</strong> ${escapeHtml(topic)}</p><p><strong>Message:</strong></p><p>${escapeHtml(message).replace(/\\n/g, "<br>")}</p>`,
+        htmlContent: `<h2>New REFI Foundation website enquiry</h2><p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Topic:</strong> ${escapeHtml(topic)}</p><p><strong>Message:</strong></p><p>${escapeHtml(message).replace(/\n/g, "<br>")}</p>`,
       }),
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
