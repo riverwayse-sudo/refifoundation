@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { refiImages } from "@/lib/media";
 import { SiteFooter, SiteHeader } from "../_components/site-chrome";
+import { CmsPage } from "../_components/cms-page";
+import { getPublishedPage } from "@/lib/sanity/client";
 
 const ways = [
   ["01", "Support", "Help fund practical programmes and the people needed to deliver them responsibly."],
@@ -11,7 +13,14 @@ const ways = [
   ["04", "Sponsor", "Explore support for youth, sport, education and community initiatives."],
 ];
 
-export default function GetInvolvedPage() {
+export async function generateMetadata() {
+  const page = await getPublishedPage("get-involved");
+  return { title: page?.seoTitle || page?.title || "Get Involved", description: page?.seoDescription || page?.summary || "Support REFI Foundation through funding, partnership, volunteering and community connections." };
+}
+
+export default async function GetInvolvedPage() {
+  const page = await getPublishedPage("get-involved");
+  if (page) return <CmsPage page={page} />;
   return (
     <main className="refi-page-shell">
       <SiteHeader />
