@@ -206,10 +206,9 @@ HTML, uses a honeypot and request timeout, and includes best-effort per-instance
 throttling. That in-memory limiter is not distributed protection; configure a hard
 rate limit at the hosting edge before production launch.
 
-Before merging or announcing the form, verify the hosting environment contains
-BREVO_API_KEY, REFI_CONTACT_EMAIL, BREVO_SENDER_EMAIL and optional
-BREVO_SENDER_NAME; test successful delivery and failure handling; and complete
-mobile/desktop visual review. Until those checks pass, the existing
+Before merging or announcing the form, configure the required Brevo API key,
+recipient address and verified sender details in the hosting environment; test
+successful delivery and failure handling; and complete mobile/desktop visual review. Until those checks pass, the existing
 mailto:hello@refifoundation.org fallback remains the reliable contact route.
 
 ### Donations
