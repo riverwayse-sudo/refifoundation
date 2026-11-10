@@ -9,7 +9,8 @@ const links = [
   { href: "/our-work", label: "Our Work" },
   { href: "/impact", label: "Impact" },
   { href: "/events", label: "Events" },
-  { href: "/stories", label: "Stories" },\n  { href: "/contact", label: "Contact" },
+  { href: "/stories", label: "Stories" },
+  { href: "/contact", label: "Contact" },
   { href: "/get-involved", label: "Get Involved" },
   { href: "/donate", label: "Donate" },
 ];
