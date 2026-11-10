@@ -61,13 +61,18 @@ write access to a public repository.
 
 ### No backend exists
 
-- No Supabase project, credentials, or dependency anywhere in the repository or
-  on any branch (the only "Supabase" reference is a stale line in `README.md`).
+- No Supabase credentials are committed to the repository. The repository alone
+  cannot establish whether the owner has created a separate REFI Supabase project;
+  verify the project reference and ownership in the approved account before
+  provisioning another project or applying migrations.
 - `package.json` has no database, auth, or storage client.
 - Only two environment variables are referenced: `GITHUB_CLIENT_ID` and
   `GITHUB_CLIENT_SECRET`.
-- The agent has **no Vercel project access** (no `.vercel` link), so it cannot
-  read or set environment variables.
+- The repository has no committed `.vercel` project link. A linked REFI Vercel
+  project is visible through the connected deployment context, but its environment
+  variables, deploy hooks and the separate `refi-foundation` team scope have not
+  been verified. Do not claim settings are absent without inspecting the correct
+  project and team.
 
 ### A previous attempt exists
 
@@ -155,9 +160,10 @@ it provides all three concerns in one service with a usable free tier, and its
 row-level security model maps directly onto requirements 6.2 and 6.10.
 
 **Explicitly a separate project.** Requirement 1.7 forbids reusing Valoria
-Institute's Supabase project. A new, REFI-specific Supabase organisation/project
-would be required. I have no access to any existing project and will not request
-one.
+Institute's Supabase project. A REFI-specific Supabase project is required. The owner has indicated that a
+separate project was connected, but its reference and ownership are not yet
+verified in the available connected account. Confirm that existing project first;
+do not create a duplicate or reuse Valoria's project.
 
 ### Cost
 
@@ -199,7 +205,8 @@ could present the client with a sleeping backend the first time they log in
 after a quiet fortnight. Mitigations: a scheduled keep-alive ping, or Pro.
 
 **I have created no billable resource and will not without authorisation** (1.6).
-Nothing above has been provisioned.
+No paid resource should be provisioned. Before creating any free-tier project,
+confirm that the owner has not already created the dedicated REFI project.
 
 ### Sources
 
