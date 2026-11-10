@@ -1,3 +1,5 @@
+import "server-only";
+
 // Loads content for the public site.
 //
 // Option B: the public site is statically generated, so content is read at BUILD
@@ -20,6 +22,7 @@ import pageSnapshot from "../../../content/pages.json";
 
 import { isContentBackendConfigured, supabaseAnonKey } from "./config";
 import { readVisibleContent } from "./supabase";
+import { rowsToContentRecords } from "./rows";
 
 export type ContentSource = {
   home: Record<string, unknown>;
@@ -50,22 +53,6 @@ function snapshot(): ContentSource {
 }
 
 /**
- * Rebuilds the JSON shape the templates expect from database rows.
- *
- * `published` and `publishedAt` are folded back into the record so the existing
- * visibility filters in content.ts keep working unchanged against either source.
- */
-function fromRows(rows: Array<{ slug: string; data: unknown; published: boolean; published_at: string | null }>): Record<string, unknown>[] {
-  return rows
-    .filter((row) => row.data && typeof row.data === "object")
-    .map((row) => ({
-      ...(row.data as Record<string, unknown>),
-      published: row.published,
-      publishedAt: (row.data as Record<string, unknown>).publishedAt ?? row.published_at ?? undefined,
-    }));
-}
-
-/**
  * Fetches a collection from Supabase, falling back to the committed snapshot.
  *
  * The fallback is deliberate rather than a silent failure: it keeps the site
@@ -89,7 +76,7 @@ async function loadCollection(
 
   // An empty table is a valid state (the site starts with no stories), so an
   // empty result is returned as-is rather than treated as a failure.
-  return fromRows(result.data);
+  return rowsToContentRecords(result.data);
 }
 
 export async function loadContentSource(): Promise<ContentSource> {

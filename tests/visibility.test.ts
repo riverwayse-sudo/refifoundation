@@ -42,6 +42,11 @@ test("isScheduled is the complement of isDue for valid dates", () => {
 
 test("a published story with a past date is public", () => {
   assert.equal(isPublishedStory({ title: "T", slug: "s", publishedAt: PAST }, NOW), true);
+  assert.equal(isPublishedStory({ title: "T", slug: "s", publishedAt: PAST, published: true }, NOW), true);
+});
+
+test("an unpublished snapshot story stays hidden even with a past date", () => {
+  assert.equal(isPublishedStory({ title: "T", slug: "s", publishedAt: PAST, published: false }, NOW), false);
 });
 
 test("a story scheduled for the future is hidden", () => {
@@ -49,8 +54,6 @@ test("a story scheduled for the future is hidden", () => {
 });
 
 test("a story with no publish date is hidden", () => {
-  // This preserves the previous loader's behaviour and prevents a half-finished
-  // story from appearing the moment it is saved.
   assert.equal(isPublishedStory({ title: "T", slug: "s" }, NOW), false);
   assert.equal(isPublishedStory({ title: "T", slug: "s", publishedAt: "" }, NOW), false);
 });
@@ -79,10 +82,11 @@ test("a page scheduled for the future is hidden until then", () => {
 // --- events --------------------------------------------------------------
 
 test("a published future event is visible", () => {
-  assert.equal(
-    isPublishedEvent({ status: "Published", startsAt: FUTURE }, NOW),
-    true,
-  );
+  assert.equal(isPublishedEvent({ status: "Published", startsAt: FUTURE }, NOW), true);
+});
+
+test("an explicitly unpublished snapshot event stays hidden", () => {
+  assert.equal(isPublishedEvent({ published: false, status: "Published", startsAt: FUTURE }, NOW), false);
 });
 
 test("a past event is hidden automatically", () => {
@@ -107,6 +111,10 @@ test("only explicitly verified metrics are public", () => {
   assert.equal(isVerifiedMetric({ label: "L", value: "1" }), false);
 });
 
+test("an explicitly unpublished verified metric stays hidden in snapshots", () => {
+  assert.equal(isVerifiedMetric({ label: "L", value: "1", verified: true, published: false }), false);
+});
+
 test("a verified metric still needs a label and a value", () => {
   assert.equal(isVerifiedMetric({ value: "1", verified: true }), false);
   assert.equal(isVerifiedMetric({ label: "L", verified: true }), false);
@@ -118,4 +126,8 @@ test("a project needs a title and a slug", () => {
   assert.equal(isPublishedProject({ title: "T", slug: "s" }), true);
   assert.equal(isPublishedProject({ title: "T" }), false);
   assert.equal(isPublishedProject({ slug: "s" }), false);
+});
+
+test("an explicitly unpublished snapshot project stays hidden", () => {
+  assert.equal(isPublishedProject({ title: "T", slug: "s", published: false }), false);
 });

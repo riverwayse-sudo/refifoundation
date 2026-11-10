@@ -91,6 +91,23 @@ export async function getPublishedPage(slug: string): Promise<PublishedPage | nu
   };
 }
 
+/** Returns every page eligible for static generation and sitemap inclusion. */
+export async function getPublishedPages(): Promise<PublishedPage[]> {
+  const source = await loadContentSource();
+  return records({ pages: source.pages }, "pages")
+    // /our-work is the existing public route; do not emit a duplicate /pages/our-work URL.
+    .filter((item) => text(item.slug) !== "our-work" && isVisiblePage(item))
+    .map((item) => ({
+      title: text(item.title),
+      slug: text(item.slug),
+      summary: optionalText(item.summary),
+      heroImageUrl: optionalText(item.heroImageUrl),
+      seoTitle: optionalText(item.seoTitle),
+      seoDescription: optionalText(item.seoDescription),
+      body: text(item.body),
+    }));
+}
+
 export type PublishedProject = {
   id: string;
   title: string;

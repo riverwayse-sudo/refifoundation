@@ -63,7 +63,7 @@ const COLLECTIONS: Collection[] = [
       { name: "title", label: "Headline", type: "text", required: true },
       { name: "excerpt", label: "Short summary", type: "textarea", required: true, help: "Shown in listings." },
       { name: "category", label: "Category", type: "select", required: true, options: CATEGORIES },
-      { name: "publishedAt", label: "Date", type: "date", help: "Leave blank to keep the story hidden." },
+      { name: "publishedAt", label: "Date", type: "date", help: "A future date stays hidden until a later website rebuild; it is not published automatically at that time." },
       { name: "coverImageUrl", label: "Cover image", type: "image" },
       { name: "body", label: "Story", type: "markdown" },
     ],
@@ -84,7 +84,7 @@ const COLLECTIONS: Collection[] = [
   {
     key: "events",
     title: "Events",
-    description: "Upcoming events. Past events are hidden automatically.",
+    description: "Upcoming events. The public list updates on website rebuilds; an event may remain visible after it starts until the next rebuild.",
     titleField: "title",
     fields: [
       { name: "title", label: "Event name", type: "text", required: true },
@@ -112,7 +112,7 @@ const COLLECTIONS: Collection[] = [
   {
     key: "pages",
     title: "Other pages",
-    description: "Additional pages, such as policies or annual reports.",
+    description: "Supporting pages are available at /pages/{slug}. Use the slug our-work to manage the existing Our Work page.",
     titleField: "title",
     fields: [
       { name: "title", label: "Page title", type: "text", required: true },
@@ -121,7 +121,7 @@ const COLLECTIONS: Collection[] = [
       { name: "body", label: "Page content", type: "markdown" },
       { name: "seoTitle", label: "Search engine title", type: "text", help: "Optional. Leave blank to use the page title." },
       { name: "seoDescription", label: "Search engine description", type: "textarea" },
-      { name: "publishedAt", label: "Publish date", type: "date" },
+      { name: "publishedAt", label: "Publish date", type: "date", help: "Future dates stay hidden until a later website rebuild; they are not published automatically at that time." },
     ],
   },
 ];
@@ -169,7 +169,7 @@ export function CmsDashboard({ email }: { email: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
-  const [editing, setEditing] = useState<{ slug: string; values: Record<string, string>; published: boolean } | null>(null);
+  const [editing, setEditing] = useState<{ slug: string; originalSlug: string | null; values: Record<string, string>; published: boolean } | null>(null);
 
   const active = useMemo(
     () => COLLECTIONS.find((collection) => collection.key === activeKey) ?? COLLECTIONS[0],
@@ -210,14 +210,14 @@ export function CmsDashboard({ email }: { email: string }) {
   function startNew() {
     const values: Record<string, string> = {};
     for (const field of active.fields) values[field.name] = "";
-    setEditing({ slug: "", values, published: false });
+    setEditing({ slug: "", originalSlug: null, values, published: false });
     setStatus("");
   }
 
   function startEdit(item: Item) {
     const values: Record<string, string> = {};
     for (const field of active.fields) values[field.name] = toFieldValue(field, item.data[field.name]);
-    setEditing({ slug: item.slug, values, published: item.published });
+    setEditing({ slug: item.slug, originalSlug: item.slug, values, published: item.published });
     setStatus("");
   }
 
@@ -274,14 +274,33 @@ export function CmsDashboard({ email }: { email: string }) {
       }
 
       if (publish) {
-        await fetch("/api/cms/publish", {
+        const publishResponse = await fetch("/api/cms/publish", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ collection: active.key, slug, publishAt: editing.values.publishedAt }),
-        }).catch(() => undefined);
+        });
+        const publishPayload = (await publishResponse.json()) as {
+          error?: string;
+          rebuild?: { triggered?: boolean; detail?: string };
+        };
+
+        if (!publishResponse.ok) {
+          setStatus(
+            "Content was saved, but the publish step failed. The public website may not have updated; retry publishing or contact support. " +
+              (publishPayload.error ?? ""),
+          );
+        } else if (publishPayload.rebuild?.triggered) {
+          setStatus(publishPayload.rebuild.detail ?? "Published. The website rebuild has been requested.");
+        } else {
+          setStatus(
+            publishPayload.rebuild?.detail ??
+              "Content was saved, but the website rebuild was not confirmed. Check the deployment before announcing this update.",
+          );
+        }
+      } else {
+        setStatus("Saved as a draft.");
       }
 
-      setStatus(publish ? "Saved and published. The website will update shortly." : "Saved as a draft.");
       setEditing(null);
       reload(active.key);
     } catch {
@@ -419,9 +438,14 @@ export function CmsDashboard({ email }: { email: string }) {
                   type="text"
                   value={editing.slug}
                   placeholder="for-example-our-first-year"
+                  disabled={editing.originalSlug !== null}
                   onChange={(event) => setEditing({ ...editing, slug: event.target.value })}
                 />
-                <p className="refi-admin-help">Leave blank to build it from the title.</p>
+                <p className="refi-admin-help">
+                  {editing.originalSlug !== null
+                    ? "The web address is fixed after creation. To change it, create a new item and save this one as a draft."
+                    : "Leave blank to build it from the title."}
+                </p>
               </div>
             ) : null}
 
