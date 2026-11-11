@@ -3,17 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-
-const links = [
-  { href: "/about", label: "About" },
-  { href: "/our-work", label: "Our Work" },
-  { href: "/impact", label: "Impact" },
-  { href: "/events", label: "Events" },
-  { href: "/stories", label: "Stories" },
-  { href: "/contact", label: "Contact" },
-  { href: "/get-involved", label: "Get Involved" },
-  { href: "/donate", label: "Donate" },
-];
+import { primaryNavigationLinks } from "./navigation-links";
 
 // The desktop nav is hidden below 800px, so this is the only way to reach
 // interior pages on a phone.
@@ -34,8 +24,13 @@ export function MobileNavigation() {
       </button>
       {open && (
         <nav id="refi-mobile-menu" className="refi-mobile-menu" aria-label="Mobile navigation">
-          {links.map(({ href, label }) => (
-            <Link key={href} href={href} onClick={() => setOpen(false)}>
+          {primaryNavigationLinks.map(({ href, label, emphasis }) => (
+            <Link
+              key={href}
+              className={emphasis ? "refi-support" : undefined}
+              href={href}
+              onClick={() => setOpen(false)}
+            >
               {label}
             </Link>
           ))}
