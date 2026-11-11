@@ -1,4 +1,10 @@
-export const primaryNavigationLinks = [
+type PrimaryNavigationLink = {
+  href: string;
+  label: string;
+  emphasis?: boolean;
+};
+
+export const primaryNavigationLinks: readonly PrimaryNavigationLink[] = [
   { href: "/about", label: "About" },
   { href: "/our-work", label: "Our Work" },
   { href: "/impact", label: "Impact" },
@@ -7,4 +13,4 @@ export const primaryNavigationLinks = [
   { href: "/contact", label: "Contact" },
   { href: "/get-involved", label: "Get Involved" },
   { href: "/donate", label: "Donate", emphasis: true },
-] as const;
+];
