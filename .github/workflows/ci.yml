@@ -34,6 +34,18 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      # Publishing rules and content validation. Uses Node's built-in test runner,
+      # so no test framework is installed.
+      - name: CMS unit tests
+        run: npm run test:cms
+
+      # Proves the row-level security policies against a real PostgreSQL instance:
+      # drafts, scheduled content and unverified figures must stay hidden, and a
+      # signed-in non-administrator must not be able to write. The GitHub runner has
+      # Docker, so these run for real rather than being skipped.
+      - name: Row-level security tests
+        run: npm run test:rls
+
       - name: Build
         run: npm run build
 

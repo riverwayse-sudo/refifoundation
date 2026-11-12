@@ -190,6 +190,97 @@ img { max-width: 100%; }
 .refi-match-notice strong { display: block; color: var(--refi-ink); font-size: 18px; margin-bottom: 6px; }
 .refi-match-notice p { margin: 0; max-width: 680px; }
 
+/* ---------------------------------------------------------------------------
+   Content manager (/admin)
+
+   Uses the existing design tokens so the dashboard feels part of the site
+   rather than a bolted-on tool. Kept visually simple: it is an internal page,
+   and the priority is that a non-technical user can read it at a glance.
+   --------------------------------------------------------------------------- */
+
+.refi-admin-shell { padding: 130px 16px 80px; max-width: 1000px; }
+.refi-admin { display: grid; gap: 20px; }
+.refi-admin-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.refi-admin-header h1 { margin: 0; font-size: 28px; color: var(--refi-ink); }
+
+.refi-admin-card {
+  background: var(--refi-white);
+  border: 1px solid var(--refi-border);
+  padding: 28px;
+  display: grid;
+  gap: 14px;
+}
+.refi-admin-card h1 { margin: 0; font-size: 26px; color: var(--refi-ink); }
+.refi-admin-card h2 { margin: 0; font-size: 20px; color: var(--refi-ink); }
+
+.refi-admin-note { margin: 0; color: var(--refi-muted); font-size: 15px; line-height: 1.6; }
+.refi-admin-help { margin: 4px 0 0; color: var(--refi-muted); font-size: 13px; }
+
+.refi-admin-error {
+  margin: 0; padding: 12px 14px;
+  background: var(--refi-red-100); border-left: 4px solid var(--refi-red-700);
+  color: var(--refi-red-800); font-size: 14px;
+}
+.refi-admin-success {
+  margin: 0; padding: 12px 14px;
+  background: var(--refi-blue-50); border-left: 4px solid var(--refi-blue-700);
+  color: var(--refi-blue-900); font-size: 14px;
+}
+
+.refi-admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.refi-admin-tab {
+  padding: 9px 16px; border: 1px solid var(--refi-border);
+  background: var(--refi-white); color: var(--refi-ink-soft);
+  font-size: 14px; cursor: pointer;
+}
+.refi-admin-tab-active { background: var(--refi-blue-900); border-color: var(--refi-blue-900); color: var(--refi-white); }
+
+.refi-admin-form { display: grid; gap: 16px; }
+.refi-admin-field { display: grid; gap: 6px; }
+.refi-admin-field label { font-size: 14px; font-weight: 600; color: var(--refi-ink); }
+.refi-admin-field input[type="text"],
+.refi-admin-field input[type="email"],
+.refi-admin-field input[type="password"],
+.refi-admin-field input[type="date"],
+.refi-admin-field input[type="datetime-local"],
+.refi-admin-field input[type="number"],
+.refi-admin-field select,
+.refi-admin-field textarea {
+  width: 100%; padding: 11px 12px;
+  border: 1px solid var(--refi-border-strong);
+  background: var(--refi-white); color: var(--refi-ink);
+  font: inherit; font-size: 15px;
+}
+.refi-admin-field textarea { resize: vertical; line-height: 1.6; }
+.refi-admin-field input:focus, .refi-admin-field select:focus, .refi-admin-field textarea:focus {
+  outline: 2px solid var(--refi-blue-600); outline-offset: 1px;
+}
+
+.refi-admin-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.refi-admin-link {
+  background: none; border: none; padding: 6px 2px;
+  color: var(--refi-blue-700); font-size: 14px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+
+.refi-admin-list-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.refi-admin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.refi-admin-list-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  padding: 14px 16px; border: 1px solid var(--refi-border); background: var(--refi-white-soft);
+}
+.refi-admin-list-item strong { color: var(--refi-ink); }
+
+.refi-admin-image { display: grid; gap: 10px; justify-items: start; }
+.refi-admin-thumb { max-width: 200px; max-height: 140px; border: 1px solid var(--refi-border); object-fit: contain; }
+
+@media (max-width: 800px) {
+  .refi-admin-shell { padding: 110px 14px 60px; }
+  .refi-admin-card { padding: 20px; }
+  .refi-admin-list-item { flex-direction: column; align-items: flex-start; }
+  .refi-admin-actions .refi-button { width: 100%; }
+}
+
 @media (max-width: 1000px) {
   .refi-cms-story-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
