@@ -9,6 +9,8 @@ export const primaryNavigationLinks: readonly PrimaryNavigationLink[] = [
   { href: "/our-work", label: "Our Work" },
   { href: "/impact", label: "Impact" },
   { href: "/events", label: "Events" },
+  { href: "/matches", label: "Match Centre" },
+  { href: "/play", label: "Play for Impact" },
   { href: "/stories", label: "Stories" },
   { href: "/contact", label: "Contact" },
   { href: "/get-involved", label: "Get Involved" },
