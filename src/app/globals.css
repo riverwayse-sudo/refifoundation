@@ -285,3 +285,19 @@ img { max-width: 100%; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
   .refi-hero-media img, .refi-reveal { animation: none; }
 }
+
+
+/* Homepage: distinct entry points for Match Centre and Play for Impact. */
+.refi-home-centres { background: var(--refi-white-soft); border-block: 1px solid var(--refi-border); }
+.refi-centre-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.refi-centre-card { min-width: 0; padding: clamp(26px, 4vw, 42px); background: white; border: 1px solid var(--refi-border); border-top: 3px solid var(--refi-gold-500); display: flex; flex-direction: column; align-items: flex-start; }
+.refi-centre-game { border-top-color: var(--refi-red-700); }
+.refi-centre-icon { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 24px; color: var(--refi-blue-700); background: var(--refi-blue-50); border-radius: 50%; }
+.refi-centre-game .refi-centre-icon { color: var(--refi-red-700); background: rgba(160, 35, 45, .07); }
+.refi-centre-kicker { color: var(--refi-blue-700); font-size: 11px; font-weight: 800; letter-spacing: .14em; }
+.refi-centre-card h3 { margin: 14px 0 12px; color: var(--refi-ink); font-size: clamp(25px, 3vw, 34px); line-height: 1.08; letter-spacing: -.025em; }
+.refi-centre-card p { max-width: 560px; margin: 0 0 28px; color: var(--refi-ink-soft); line-height: 1.65; }
+.refi-centre-card .refi-button { margin-top: auto; }
+@media (max-width: 800px) {
+  .refi-centre-grid { grid-template-columns: 1fr; }
+}
