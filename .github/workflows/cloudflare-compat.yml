@@ -1,6 +1,17 @@
 name: Cloudflare compatibility
 
 on:
+  push:
+    branches:
+      - integrate/match-centre-play-for-impact
+    paths:
+      - "src/**"
+      - "public/**"
+      - "next.config.*"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/cloudflare-compat.yml"
   pull_request:
     branches:
       - main
