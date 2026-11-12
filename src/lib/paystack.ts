@@ -29,6 +29,7 @@ export type VerifiedPayment = {
   paidAt: string | null;
   donorEmail: string | null;
   error?: string;
+  retryable?: boolean;
 };
 
 export type InitializeResult = {
@@ -107,6 +108,7 @@ export async function verifyTransaction(
       ok: false, reference, amountMinor: null, currency: null, status: null,
       paidAt: null, donorEmail: null,
       error: "Payment verification is not configured yet.",
+      retryable: true,
     };
   }
 
@@ -129,6 +131,7 @@ export async function verifyTransaction(
         ok: false, reference, amountMinor: null, currency: null, status: null,
         paidAt: null, donorEmail: null,
         error: "We could not verify this payment with Paystack.",
+        retryable: response.status === 429 || response.status >= 500,
       };
     }
 
@@ -214,6 +217,7 @@ export async function verifyTransaction(
       ok: false, reference, amountMinor: null, currency: null, status: null,
       paidAt: null, donorEmail: null,
       error: "Unable to reach Paystack to verify this payment.",
+      retryable: true,
     };
   }
 }
