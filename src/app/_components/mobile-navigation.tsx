@@ -11,6 +11,7 @@ const links = [
   { href: "/events", label: "Events" },
   { href: "/stories", label: "Stories" },
   { href: "/matches", label: "Live Matches" },
+  { href: "/play", label: "Play for Impact" },
   { href: "/get-involved", label: "Get Involved" },
   { href: "/donate", label: "Donate" },
 ];
