@@ -1,26 +1,40 @@
-// Simple in-memory rate limiting for the CMS endpoints.
+// Best-effort in-memory rate limiting for CMS endpoints.
 //
-// Limitation, stated plainly: this state lives in a single serverless instance and
-// resets on a cold start, so it is a speed bump rather than a hard guarantee. It
-// still raises the cost of password guessing and publish spamming, which is the
-// practical goal. A distributed limiter would need a shared store; Supabase could
-// provide one at no cost, but this is deliberately kept simple for now.
+// This is per serverless instance and resets on cold starts; it is not a
+// distributed security boundary. Production still needs an edge-level control.
+// Storage is bounded and expired buckets are periodically pruned.
 
 type Bucket = { count: number; resetAt: number };
 
+const MAX_BUCKETS = 10_000;
 const buckets = new Map<string, Bucket>();
+let callsSinceSweep = 0;
 
 export type RateLimitResult = { allowed: boolean; retryAfterSeconds: number };
 
+function pruneBuckets(now: number): void {
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) buckets.delete(key);
+  }
+  while (buckets.size >= MAX_BUCKETS) {
+    const oldest = buckets.keys().next().value;
+    if (oldest === undefined) break;
+    buckets.delete(oldest);
+  }
+}
+
 /**
  * Records an attempt for `key` and reports whether it is within `limit` per
- * `windowMs`.
+ * `windowMs`. The map has a hard upper bound to prevent unbounded memory growth.
  */
 export function rateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
   const now = Date.now();
-  const existing = buckets.get(key);
+  callsSinceSweep += 1;
+  if (callsSinceSweep % 64 === 0 || buckets.size >= MAX_BUCKETS) pruneBuckets(now);
 
+  const existing = buckets.get(key);
   if (!existing || existing.resetAt <= now) {
+    if (buckets.size >= MAX_BUCKETS) pruneBuckets(now);
     buckets.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true, retryAfterSeconds: 0 };
   }
@@ -40,9 +54,10 @@ export function resetRateLimit(key: string): void {
   buckets.delete(key);
 }
 
-/** Derives a client identifier from proxy headers, falling back to a constant. */
+/** Derives a bounded client identifier from the proxy chain. */
 export function clientKey(request: Request, scope: string): string {
   const forwarded = request.headers.get("x-forwarded-for") ?? "";
-  const ip = forwarded.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
-  return `${scope}:${ip}`;
+  const addresses = forwarded.split(",").map((value) => value.trim()).filter(Boolean);
+  const ip = addresses.at(-1) || request.headers.get("x-real-ip")?.trim() || "unknown";
+  return `${scope.slice(0, 64)}:${ip.slice(0, 128)}`;
 }
