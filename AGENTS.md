@@ -88,6 +88,57 @@ confirm the **deployed** site: fetch the live URL, check the rendered HTML and
 response headers, and load it in a browser to confirm hydration and client-side
 navigation still work.
 
+## Free-only technology policy
+
+REFI must remain operable on free tiers and open-source software. Do not add
+paid subscriptions, paid APIs, premium hosting features, or dependencies that
+require a licence fee. Do not silently upgrade any provider plan. If a free
+quota is exhausted, show an honest unavailable/stale state and resume when the
+quota resets; never trigger paid usage to keep a feature online.
+
+- API-Football is permitted only on its **$0 Free plan** (currently 100
+  requests/day, no payment card required, and the provider says requests stop
+  when the quota is reached rather than generating overage charges). Do not
+  upgrade it. The live feed must tolerate quota exhaustion.
+- Hosting, database, CI, email and analytics must remain within free allowances.
+  Reassess the current provider's published limits before enabling any service.
+- Paystack is a payment processor, not a subscription dependency: transaction
+  fees apply only when a donor chooses to make a payment. Do not add paid
+  recurring services around donations.
+- Prefer existing platform capabilities and browser-native code over new
+  packages. Every proposed dependency must be open-source and free to use.
+
+## Live football feed (PR #22 branch)
+
+`/matches` renders a live-score feed backed by API-Football. The provider's free
+tier is metered per day, so the feed is built around not spending requests
+carelessly. Do not undo any of the following:
+
+- **No short `revalidate` on the route.** `revalidate = 30` is 2,880 requests a
+  day on its own, which exhausts a free-tier allowance within the first hour of
+  a match day. The upstream call is cached for `REFRESH_SECONDS` (120) in
+  `src/lib/football/live.ts`, and the route response is cacheable for the same
+  window, so many visitors and repeated polls share one provider request.
+- **The daily ceiling comes from the provider, not a guess.** `live.ts` reads
+  `x-ratelimit-requests-limit` / `-current` from the provider's response headers
+  and applies a 0.9 safety margin. Do not replace this with a hardcoded number:
+  the real limit depends on the account plan, which is an owner-side fact.
+  `LIVE_SCORE_DAILY_BUDGET` overrides it when an operator sets it explicitly,
+  and takes precedence over the reported value.
+- **Single-flight is load-bearing.** `fetchLiveMatches()` shares one in-flight
+  promise, so concurrent cache misses collapse into one upstream call. Removing
+  it lets a traffic burst stampede the provider.
+- **There are no automatic retries.** A failure must not spend more of the
+  remaining allowance. A `429` is treated as definitive and marks the rest of
+  the day as spent instead of probing again.
+- **The client poll interval is not the cost driver.** Polling re-reads a cached
+  feed, so `POLL_MS` can stay short without costing provider requests. Polling
+  also pauses while the tab is hidden.
+- **Test with `npm run verify:live-feed`, never the real provider.**
+  `FOOTBALL_API_BASE` points the feed at a local mock, and
+  `FOOTBALL_REFRESH_SECONDS` lowers the cache window so the budget guard can be
+  exercised deterministically. Both exist for testing only.
+
 ## Vercel
 
 Preview deployments sit behind Vercel Authentication (SSO), so previews cannot
@@ -99,9 +150,25 @@ ask the owner for a bypass secret. The owner must change environment variables
 
 - **Logo**: the original asset is not in the repository. Do not recreate or
   substitute it. Work is blocked until the client supplies the file.
-- **Sports match centre** (`feat/cms-live-match-foundation`): deferred.
-- **Contact form and donations** (`/donate` is a static page): blocked on
-  credentials (Brevo, Paystack). Do not ship forms that cannot deliver.
+- **Match Centre** is implemented at `/matches` using API-Football. Keep the
+  provider cache, single-flight request guard, provider-derived daily budget,
+  no-retry-on-quota behavior and mock-based `npm run verify:live-feed` test.
+- **Play for Impact** lives at `/play`; each game is served by `/play/[game]`.
+  The game catalog is the single source of truth. A score is not a donation,
+  reward or prize. Browser-reported scores are not authoritative and must not
+  be published to a leaderboard until a server-issued session can validate them.
+- **Payments must be verified server-side.** Never trust a success URL or event
+  body as proof of payment. Verify amount and currency with Paystack, validate
+  the raw-body webhook signature, re-verify the transaction, and use the unique
+  payment reference for idempotency. Storage failure must never be reported as
+  a recorded donation. Run `npm run verify:donations` and
+  `npm run verify:games` against their local mocks.
+- **Donation storage migration** (`supabase/migrations/0001_donations.sql`)
+  is version-controlled but not automatically applied. Until an owner applies
+  it and supplies the required Paystack/Supabase server credentials, donation
+  totals remain unavailable; do not invent totals or claim successful storage.
+- **Game score migration** is also not applied. Do not enable public score
+  persistence without server-issued session validation.
 - **The mobile navigation is the only route to interior pages below 800px**;
   `.refi-nav-links` is hidden there. Do not remove `MobileNavigation` from
   `SiteHeader` without replacing it.
