@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MobileNavigation } from "./mobile-navigation";
+import { primaryNavigationLinks } from "./navigation-links";
 
 export function SiteHeader() {
   return (
@@ -7,14 +8,11 @@ export function SiteHeader() {
       <div className="refi-container refi-nav-inner">
         <Link className="refi-brand" href="/" aria-label="REFI Foundation home"><span className="refi-mark">R</span><span>REFI FOUNDATION</span></Link>
         <nav className="refi-nav-links" aria-label="Primary navigation">
-          <Link href="/about">About</Link>
-          <Link href="/our-work">Our Work</Link>
-          <Link href="/impact">Impact</Link>
-          <Link href="/events">Events</Link>
-          <Link href="/stories">Stories</Link>
-          <Link href="/contact">Contact</Link>
-          <Link href="/get-involved">Get Involved</Link>
-          <Link className="refi-support" href="/donate">Donate</Link>
+          {primaryNavigationLinks.map(({ href, label, emphasis }) => (
+            <Link key={href} className={emphasis ? "refi-support" : undefined} href={href}>
+              {label}
+            </Link>
+          ))}
         </nav>
         <MobileNavigation />
       </div>
