@@ -114,3 +114,14 @@ test("limits repeated submissions from one IP within the window", async () => {
   assert.equal(response.status, 429);
   assert.equal(response.headers.get("retry-after"), "900");
 });
+
+test("uses the rightmost proxy address instead of a client-supplied prefix", async () => {
+  const trustedAddress = "203.0.113.88";
+  let response;
+  for (let i = 0; i < 6; i += 1) {
+    response = await POST(request(validPayload(), {
+      headers: { "x-forwarded-for": `198.51.100.${i + 1}, ${trustedAddress}` },
+    }));
+  }
+  assert.equal(response.status, 429);
+});
