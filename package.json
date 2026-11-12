@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "verify:sitemap": "node scripts/verify-sitemap.mjs",
-    "verify:live-feed": "node scripts/verify-live-feed.mjs"
+    "verify:live-feed": "node scripts/verify-live-feed.mjs",
+    "verify:donations": "node scripts/verify-donations.mjs",
+    "verify:games": "node scripts/verify-games.mjs"
   },
   "dependencies": {
     "lucide-react": "1.61.0",
