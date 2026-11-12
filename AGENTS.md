@@ -88,6 +88,26 @@ confirm the **deployed** site: fetch the live URL, check the rendered HTML and
 response headers, and load it in a browser to confirm hydration and client-side
 navigation still work.
 
+## Free-only technology policy
+
+REFI must remain operable on free tiers and open-source software. Do not add
+paid subscriptions, paid APIs, premium hosting features, or dependencies that
+require a licence fee. Do not silently upgrade any provider plan. If a free
+quota is exhausted, show an honest unavailable/stale state and resume when the
+quota resets; never trigger paid usage to keep a feature online.
+
+- API-Football is permitted only on its **$0 Free plan** (currently 100
+  requests/day, no payment card required, and the provider says requests stop
+  when the quota is reached rather than generating overage charges). Do not
+  upgrade it. The live feed must tolerate quota exhaustion.
+- Hosting, database, CI, email and analytics must remain within free allowances.
+  Reassess the current provider's published limits before enabling any service.
+- Paystack is a payment processor, not a subscription dependency: transaction
+  fees apply only when a donor chooses to make a payment. Do not add paid
+  recurring services around donations.
+- Prefer existing platform capabilities and browser-native code over new
+  packages. Every proposed dependency must be open-source and free to use.
+
 ## Live football feed (PR #22 branch)
 
 `/matches` renders a live-score feed backed by API-Football. The provider's free
