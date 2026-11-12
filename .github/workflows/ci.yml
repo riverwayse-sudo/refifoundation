@@ -46,3 +46,9 @@ jobs:
       # free-tier safeguards are exercised without spending real API quota.
       - name: Verify live feed safeguards
         run: node scripts/verify-live-feed.mjs
+
+      - name: Verify donation integrity
+        run: node scripts/verify-donations.mjs
+
+      - name: Verify games
+        run: node scripts/verify-games.mjs
