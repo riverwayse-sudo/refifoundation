@@ -18,15 +18,40 @@ const TOPICS = new Set([
 
 // Best-effort per-instance throttling. Serverless instances do not share memory;
 // enforce a hard edge-level limit at the hosting layer before production launch.
+// Bound both key count and lifetime so attacker-controlled addresses cannot grow
+// this map indefinitely. Proxy chains append addresses; use the rightmost value.
+const RATE_WINDOW_MS = 15 * 60 * 1000;
+const MAX_RATE_KEYS = 10_000;
 const attempts = new Map<string, { count: number; resetAt: number }>();
+let rateLimitCalls = 0;
+
+function pruneRateLimits(now: number): void {
+  for (const [key, entry] of attempts) {
+    if (entry.resetAt <= now) attempts.delete(key);
+  }
+  while (attempts.size >= MAX_RATE_KEYS) {
+    const oldest = attempts.keys().next().value;
+    if (oldest === undefined) break;
+    attempts.delete(oldest);
+  }
+}
+
 function isRateLimited(request: Request): boolean {
   const forwarded = request.headers.get("x-forwarded-for") || "";
-  const ip = forwarded.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+  const forwardedAddresses = forwarded.split(",").map((value) => value.trim()).filter(Boolean);
+  const ip = forwardedAddresses.at(-1) || request.headers.get("x-real-ip")?.trim() || "unknown";
   const now = Date.now();
+
+  // Sweep periodically rather than on every request. The hard cap remains active
+  // on every insertion, including during high-cardinality traffic.
+  rateLimitCalls += 1;
+  if (rateLimitCalls % 64 === 0 || attempts.size >= MAX_RATE_KEYS) pruneRateLimits(now);
+
   const key = `contact:${ip}`;
   const current = attempts.get(key);
   if (!current || current.resetAt <= now) {
-    attempts.set(key, { count: 1, resetAt: now + 15 * 60 * 1000 });
+    if (attempts.size >= MAX_RATE_KEYS) pruneRateLimits(now);
+    attempts.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
     return false;
   }
   current.count += 1;
