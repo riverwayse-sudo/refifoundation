@@ -10,12 +10,13 @@ import type { LiveMatch, MatchStatus } from "@/lib/football/types";
  *    Next.js data cache, so traffic does not translate into provider calls.
  *  - Concurrent cache misses share one in-flight request instead of each
  *    starting its own, so a burst of traffic cannot stampede the provider.
- *  - The daily ceiling is taken from the provider's own rate-limit response
- *    headers rather than a hardcoded guess, so it tracks whatever plan the
- *    Foundation is actually on.
- *  - A daily guard stops calling upstream once that ceiling is nearly spent, so
- *    the feed degrades to an honest message instead of silently breaking for
- *    the rest of the day.
+ *  - A per-process guard uses the provider's rate-limit response headers
+ *    and leaves a safety margin. This is deliberately not described as a
+ *    global account-wide counter: serverless instances do not share memory.
+ *  - API-Football's own Free plan is the account-wide hard limit (100 requests
+ *    per day at the time this was reviewed); the provider states that requests
+ *    stop at quota rather than creating overage charges. A 429 therefore
+ *    degrades to an honest unavailable state for the rest of the day.
  *  - There are no automatic retries: a failed call does not spend more of the
  *    remaining allowance.
  *
@@ -119,9 +120,9 @@ function mapFixture(item: ApiFixture): LiveMatch | null {
 /**
  * Per-instance request accounting for the current UTC day.
  *
- * Serverless instances do not share memory, so this bounds the spend of a warm
- * instance rather than the whole account. The hard cap on total spend is the
- * revalidate window, which limits how often any instance may call upstream.
+ * Serverless instances do not share memory, so this is only a local safety
+ * margin, not an account-wide quota guarantee. The provider enforces the
+ * account-wide Free-plan ceiling and rejects further calls when it is reached.
  */
 let budgetDay = "";
 let budgetUsed = 0;
