@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "verify:sitemap": "node scripts/verify-sitemap.mjs"
+    "verify:sitemap": "node scripts/verify-sitemap.mjs",
+    "verify:live-feed": "node scripts/verify-live-feed.mjs"
   },
   "dependencies": {
     "lucide-react": "1.61.0",
