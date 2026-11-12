@@ -130,9 +130,25 @@ ask the owner for a bypass secret. The owner must change environment variables
 
 - **Logo**: the original asset is not in the repository. Do not recreate or
   substitute it. Work is blocked until the client supplies the file.
-- **Sports match centre** (`feat/cms-live-match-foundation`): deferred.
-- **Contact form and donations** (`/donate` is a static page): blocked on
-  credentials (Brevo, Paystack). Do not ship forms that cannot deliver.
+- **Match Centre** is implemented at `/matches` using API-Football. Keep the
+  provider cache, single-flight request guard, provider-derived daily budget,
+  no-retry-on-quota behavior and mock-based `npm run verify:live-feed` test.
+- **Play for Impact** lives at `/play`; each game is served by `/play/[game]`.
+  The game catalog is the single source of truth. A score is not a donation,
+  reward or prize. Browser-reported scores are not authoritative and must not
+  be published to a leaderboard until a server-issued session can validate them.
+- **Payments must be verified server-side.** Never trust a success URL or event
+  body as proof of payment. Verify amount and currency with Paystack, validate
+  the raw-body webhook signature, re-verify the transaction, and use the unique
+  payment reference for idempotency. Storage failure must never be reported as
+  a recorded donation. Run `npm run verify:donations` and
+  `npm run verify:games` against their local mocks.
+- **Donation storage migration** (`supabase/migrations/0001_donations.sql`)
+  is version-controlled but not automatically applied. Until an owner applies
+  it and supplies the required Paystack/Supabase server credentials, donation
+  totals remain unavailable; do not invent totals or claim successful storage.
+- **Game score migration** is also not applied. Do not enable public score
+  persistence without server-issued session validation.
 - **The mobile navigation is the only route to interior pages below 800px**;
   `.refi-nav-links` is hidden there. Do not remove `MobileNavigation` from
   `SiteHeader` without replacing it.
