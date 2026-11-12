@@ -13,9 +13,9 @@ import type { LiveMatch, MatchStatus } from "@/lib/football/types";
  *  - The daily ceiling is taken from the provider's own rate-limit response
  *    headers rather than a hardcoded guess, so it tracks whatever plan the
  *    Foundation is actually on.
- *  - A daily guard stops calling upstream once that ceiling is nearly spent, so
- *    the feed degrades to an honest message instead of silently breaking for
- *    the rest of the day.
+ *  - A per-instance daily guard stops calling upstream once that instance's
+ *    observed allowance is nearly spent. This is a safety brake, not a global
+ *    account-wide quota guarantee across serverless instances.
  *  - There are no automatic retries: a failed call does not spend more of the
  *    remaining allowance.
  *
@@ -47,12 +47,9 @@ function resolveRefreshSeconds(): number {
 export const REFRESH_SECONDS = resolveRefreshSeconds();
 
 /**
- * How much of the provider's reported daily allowance we are willing to use.
- *
- * The absolute limit is read from the provider's `x-ratelimit-requests-limit`
- * response header, so it reflects the real account plan rather than an
- * assumption. This fraction is the safety margin, leaving headroom for manual
- * checks and for per-instance counting drift across serverless instances.
+ * Per-instance safety fraction of the provider's reported daily allowance.
+ * The provider's headers are observations from responses, not a globally
+ * synchronised counter; concurrent serverless instances can still race.
  */
 const BUDGET_FRACTION = 0.9;
 
@@ -119,9 +116,10 @@ function mapFixture(item: ApiFixture): LiveMatch | null {
 /**
  * Per-instance request accounting for the current UTC day.
  *
- * Serverless instances do not share memory, so this bounds the spend of a warm
- * instance rather than the whole account. The hard cap on total spend is the
- * revalidate window, which limits how often any instance may call upstream.
+ * Serverless instances do not share memory. This is only a per-instance safety
+ * brake; caching reduces duplicate calls but is not a hard global spend cap.
+ * An account-wide guarantee requires provider-side quota controls or shared
+ * atomic accounting, neither of which is assumed here.
  */
 let budgetDay = "";
 let budgetUsed = 0;
@@ -192,7 +190,7 @@ async function loadFeed(apiKey: string): Promise<LiveFeed> {
       matches: [],
       updatedAt: now,
       budgetExhausted: true,
-      message: "Live scores have reached today's provider limit. The feed will resume automatically when the limit resets.",
+      message: "Live scores have reached this instance's daily safety threshold. The feed will retry after the daily budget window resets.",
     };
   }
 
