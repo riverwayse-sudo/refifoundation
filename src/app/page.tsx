@@ -5,6 +5,8 @@ import { refiImages } from "@/lib/media";
 import { getHomeSettings, getPublishedProjects, getPublishedStories, getVerifiedImpactMetrics } from "@/lib/content";
 import { SiteFooter, SiteHeader } from "./_components/site-chrome";
 
+export const revalidate = 3600;
+
 const work = [
   { number: "01", title: "Education & opportunity", text: "Creating practical pathways for children and young people to learn, grow and participate fully in their communities." },
   { number: "02", title: "Community support", text: "Supporting initiatives that strengthen families, local communities and the people already doing meaningful work on the ground." },
