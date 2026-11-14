@@ -7,13 +7,13 @@ import {
   isPublishedProject,
 } from "./cms/visibility";
 
-// Content is authored in the CMS dashboard at /admin, which writes to Supabase and
-// then triggers a deploy hook. The public site is statically generated, so these
-// loaders read at build time and the templates stay unchanged.
+// Content is authored in the CMS dashboard at /admin and stored in Supabase.
+// Public pages use ISR with a one-hour data-cache window. Publishing invalidates
+// the shared CMS tag and route cache, so the next request refreshes content without
+// rebuilding or redeploying the website.
 //
-// When no backend is configured (local development, or a deployment without
-// Supabase), the loaders read the JSON snapshot under content/. Both paths produce
-// the same shape, so the filtering rules below apply identically either way.
+// When no backend is configured, or Supabase is unavailable, loaders use the
+// committed JSON snapshot under content/. Both paths produce the same shape.
 
 type ContentRecord = Record<string, unknown>;
 
