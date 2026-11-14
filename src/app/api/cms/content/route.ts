@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/cms/auth";
 import { contentCollections, type ContentCollection } from "@/lib/cms/config";
 import { serviceRequest } from "@/lib/cms/supabase";
 import { readJsonBody } from "@/lib/cms/request-body";
+import { revalidateCmsContent } from "@/lib/cms/revalidation";
 import { normaliseSlug, isValidSlug, validateContent } from "@/lib/cms/validation";
 
 export const runtime = "nodejs";
@@ -85,22 +86,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: validated.errors.join(" ") }, { status: 400 });
   }
 
-  // Verification is not settable through this route, so an update must carry the
-  // existing value forward rather than dropping it. Without this, editing a verified
-  // metric would silently unverify it and remove the figure from the public site.
-  if (collection === "impact_metrics") {
-    const existing = await serviceRequest<Array<{ data: Record<string, unknown> }>>(
-      `content?collection=eq.impact_metrics&slug=eq.${encodeURIComponent(rawSlug)}&select=data&limit=1`,
+  // Read the existing publication state before writing. This both preserves
+  // editorial verification and lets an unpublish action invalidate the public
+  // cache immediately rather than leaving a withdrawn item visible for an hour.
+  const existing = await serviceRequest<Array<{ data: Record<string, unknown>; published: boolean }>>(
+    `content?collection=eq.${encodeURIComponent(collection)}&slug=eq.${encodeURIComponent(rawSlug)}&select=data,published&limit=1`,
+  );
+  if (!existing.ok) {
+    return NextResponse.json(
+      { error: "Could not verify the existing content before saving. Please try again." },
+      { status: 502, headers: { "Cache-Control": "no-store" } },
     );
-    if (!existing.ok) {
-      return NextResponse.json(
-        { error: "Could not verify the existing impact figure before saving. Please try again." },
-        { status: 502, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-    if (existing.data.length > 0 && existing.data[0].data?.verified === true) {
-      validated.value.verified = true;
-    }
+  }
+  const previous = existing.data[0];
+  const wasPublic = previous?.published === true;
+
+  // Verification is not settable through this route, so an update must carry the
+  // existing value forward rather than dropping it.
+  if (collection === "impact_metrics" && previous?.data?.verified === true) {
+    validated.value.verified = true;
   }
 
   // A scheduled publish time is stored on the record; the database visibility rule
@@ -128,6 +132,8 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 502, headers: { "Cache-Control": "no-store" } });
   }
+
+  if (wasPublic || payload.published) revalidateCmsContent();
 
   return NextResponse.json(
     { item: result.data[0] ?? null },
