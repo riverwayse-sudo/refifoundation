@@ -63,7 +63,7 @@ const COLLECTIONS: Collection[] = [
       { name: "title", label: "Headline", type: "text", required: true },
       { name: "excerpt", label: "Short summary", type: "textarea", required: true, help: "Shown in listings." },
       { name: "category", label: "Category", type: "select", required: true, options: CATEGORIES },
-      { name: "publishedAt", label: "Date", type: "date", help: "A future date stays hidden until a later website rebuild; it is not published automatically at that time." },
+      { name: "publishedAt", label: "Date", type: "date", help: "A future date stays hidden until due, then appears on the next hourly refresh." },
       { name: "coverImageUrl", label: "Cover image", type: "image" },
       { name: "body", label: "Story", type: "markdown" },
     ],
@@ -84,7 +84,7 @@ const COLLECTIONS: Collection[] = [
   {
     key: "events",
     title: "Events",
-    description: "Upcoming events. The public list updates on website rebuilds; an event may remain visible after it starts until the next rebuild.",
+    description: "Upcoming events refresh hourly; after an event starts, it may remain visible until the next hourly refresh.",
     titleField: "title",
     fields: [
       { name: "title", label: "Event name", type: "text", required: true },
@@ -121,7 +121,7 @@ const COLLECTIONS: Collection[] = [
       { name: "body", label: "Page content", type: "markdown" },
       { name: "seoTitle", label: "Search engine title", type: "text", help: "Optional. Leave blank to use the page title." },
       { name: "seoDescription", label: "Search engine description", type: "textarea" },
-      { name: "publishedAt", label: "Publish date", type: "date", help: "Future dates stay hidden until a later website rebuild; they are not published automatically at that time." },
+      { name: "publishedAt", label: "Publish date", type: "date", help: "Future dates stay hidden until due and appear on the next hourly refresh." },
     ],
   },
 ];
@@ -281,7 +281,7 @@ export function CmsDashboard({ email }: { email: string }) {
         });
         const publishPayload = (await publishResponse.json()) as {
           error?: string;
-          rebuild?: { triggered?: boolean; detail?: string };
+          refresh?: { triggered?: boolean; detail?: string };
         };
 
         if (!publishResponse.ok) {
@@ -289,12 +289,12 @@ export function CmsDashboard({ email }: { email: string }) {
             "Content was saved, but the publish step failed. The public website may not have updated; retry publishing or contact support. " +
               (publishPayload.error ?? ""),
           );
-        } else if (publishPayload.rebuild?.triggered) {
-          setStatus(publishPayload.rebuild.detail ?? "Published. The website rebuild has been requested.");
+        } else if (publishPayload.refresh?.triggered) {
+          setStatus(publishPayload.refresh.detail ?? "Published. Cached pages will refresh on the next request.");
         } else {
           setStatus(
-            publishPayload.rebuild?.detail ??
-              "Content was saved, but the website rebuild was not confirmed. Check the deployment before announcing this update.",
+            publishPayload.refresh?.detail ??
+              "Content was saved, but cache refresh was not confirmed. Please retry or contact support before announcing this update.",
           );
         }
       } else {
