@@ -232,6 +232,8 @@ async function verifySite(origin) {
 async function verifyScoreApi(origin) {
   console.log("score api");
 
+  const { MAX_SCORE_BODY_BYTES } = await import(new URL("../src/lib/games/scores.ts", import.meta.url));
+
   const post = async (body, raw, extraHeaders = {}) => {
     const res = await fetch(`${origin}/api/scores`, {
       method: "POST",
