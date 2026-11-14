@@ -1,7 +1,6 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/cms/auth";
-import { deployHookUrl } from "@/lib/cms/config";
 import { serviceRequest } from "@/lib/cms/supabase";
 import { readJsonBody } from "@/lib/cms/request-body";
 
@@ -17,44 +16,9 @@ type Row = {
 };
 
 /**
- * Triggers the Vercel deploy hook so the static site rebuilds with the new
- * content. This is the "automated deployment hook" half of Option B.
- *
- * A failure here is reported but not treated as fatal: the content is already
- * saved, and the change will appear on the next deploy regardless. Reporting it
- * honestly is better than claiming a publish succeeded when the site has not yet
- * been rebuilt.
- */
-async function triggerDeploy(): Promise<{ triggered: boolean; detail: string }> {
-  if (!deployHookUrl) {
-    return {
-      triggered: false,
-      detail:
-        "Content saved. Automatic rebuild is not configured, so the change will appear after the next deployment.",
-    };
-  }
-
-  try {
-    const response = await fetch(deployHookUrl, { method: "POST", cache: "no-store" });
-    if (!response.ok) {
-      return {
-        triggered: false,
-        detail: `Content saved, but the rebuild request was rejected (status ${response.status}).`,
-      };
-    }
-    return { triggered: true, detail: "Content saved. The website is rebuilding now." };
-  } catch {
-    return {
-      triggered: false,
-      detail: "Content saved, but the rebuild request could not be sent. It will appear on the next deployment.",
-    };
-  }
-}
-
-/**
- * Publishes a record: marks it published, stamps the time, and requests a rebuild.
- * The record is identified by collection and slug so the dashboard does not need to
- * track database ids.
+ * Publishes a record and invalidates the CMS data and route caches. The next
+ * visitor request refreshes affected pages through ISR; no full-site deployment
+ * is created. The record is identified by collection and slug.
  */
 export async function POST(request: Request) {
   const admin = await requireAdmin();
@@ -112,15 +76,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That item no longer exists." }, { status: 404 });
   }
 
-  // The Next.js Data Cache persists across deployments. Invalidate the tagged
-  // Supabase reads before requesting a new static build, or the build can reuse
-  // content from the previous deployment.
+  // Invalidate both the tagged Supabase data and the route cache. The next request
+  // regenerates affected pages without a full deployment. Revalidating the root
+  // layout covers homepage, stories, projects, events and custom CMS pages.
   revalidateTag("cms-content", { expire: 0 });
+  revalidatePath("/", "layout");
+  revalidatePath("/sitemap.xml");
 
-  const deploy = await triggerDeploy();
+  const isScheduled = Date.parse(publishedAt) > Date.now();
+  const refresh = {
+    triggered: true,
+    detail: isScheduled
+      ? "Content scheduled. It will appear after its publish time on the next hourly refresh."
+      : "Content published. Cached pages will refresh on the next request.",
+  };
 
   return NextResponse.json(
-    { ok: true, publishedAt, rebuild: deploy },
+    { ok: true, publishedAt, refresh },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
