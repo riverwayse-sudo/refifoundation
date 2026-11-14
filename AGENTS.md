@@ -60,7 +60,7 @@ branch-protection and ruleset endpoints). This is an owner action.
   using `SiteHeader`/`SiteFooter` from `_components/site-chrome.tsx`. That
   caused the footer to drift between pages. Use the shared components.
 
-## CMS (Supabase + build-time content)
+## CMS (Supabase + ISR content)
 
 Content is authored at `/admin` (a first-party Next.js page) and stored in Supabase once the dedicated REFI project is provisioned; until then the public site uses committed JSON snapshots.
 `src/lib/content.ts` still reads content at build time: either from Supabase using
@@ -110,7 +110,7 @@ Replaced the previous Decap/GitHub editor. `public/admin/` and the
   links may be same-site paths or HTTPS URLs; script, data and protocol-relative
   URLs are rejected.
 - **CMS secrets are server-only.** `config.ts`, `supabase.ts`, `auth.ts` and the
-  build-time content source import `server-only`; never move these modules into a
+  server-side content source import `server-only`; never move these modules into a
   client component dependency graph.
 - **Saved content slugs are immutable in the editor.** Changing a slug is a
   create-new-and-unpublish-old operation; do not re-enable in-place slug editing
@@ -121,8 +121,8 @@ Replaced the previous Decap/GitHub editor. `public/admin/` and the
   recovery path. Both limits are documented in `docs/owner-handover.md`.
 - **Environment variable names are checked by a test.** `tests/docs-consistency.test.ts`
   fails if `docs/owner-handover.md` names a variable the code does not read, or the
-  code reads one the doc does not document. This caught a real
-  `CMS_DEPLOY_HOOK_URL` vs `VERCEL_DEPLOY_HOOK_URL` mismatch.
+  code reads one the doc does not document. This caught a real environment-name mismatch. The selected ISR publishing
+  architecture does not require a Vercel deploy hook.
 
 
 - **Never use Valoria's Supabase project for REFI.** The dedicated REFI project is
