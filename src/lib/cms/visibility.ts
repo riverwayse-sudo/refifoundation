@@ -3,7 +3,7 @@
 // Kept free of imports and I/O so the rules can be unit tested directly and so
 // there is exactly one place in the TypeScript codebase that encodes them. The
 // database enforces the same rules in public.is_content_visible() (see
-// supabase/migrations/0001_cms_schema.sql), which is the authority for anything
+// supabase/migrations/0003_cms_schema.sql), which is the authority for anything
 // read through the anon key. These functions also guard the JSON snapshot fallback.
 //
 // Snapshot files intentionally contain drafts for recovery. A missing "published"
