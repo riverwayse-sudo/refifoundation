@@ -5,11 +5,11 @@ import { getPublishedStories, getPublishedStory } from "@/lib/content";
 
 type Props = { params: Promise<{ slug: string }> };
 
-// Story pages are generated from the content committed to the repository, so a
-// new story appears after the CMS commit triggers a rebuild. Any slug that is
-// not in that set is genuinely absent, so return 404 rather than rendering on
-// demand.
-export const dynamicParams = false;
+export const revalidate = 3600;
+
+// Known stories are prerendered, while new CMS slugs can be rendered on demand.
+// ISR refreshes the cached page hourly and the publish endpoint invalidates it.
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const stories = await getPublishedStories();
