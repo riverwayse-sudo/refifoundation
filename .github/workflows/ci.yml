@@ -34,6 +34,12 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Verify contact endpoint
+        run: npm run verify:contact
+
+      - name: Verify shared navigation
+        run: node --experimental-strip-types --test scripts/verify-navigation.mjs
+
       - name: Build
         run: npm run build
 
@@ -41,3 +47,14 @@ jobs:
       # published stories included, scheduled stories excluded, canonical URLs.
       - name: Verify sitemap
         run: node scripts/verify-sitemap.mjs
+
+      # Drives a real production server against a local mock provider, so the
+      # free-tier safeguards are exercised without spending real API quota.
+      - name: Verify live feed safeguards
+        run: node scripts/verify-live-feed.mjs
+
+      - name: Verify donation integrity
+        run: node scripts/verify-donations.mjs
+
+      - name: Verify games
+        run: node scripts/verify-games.mjs
