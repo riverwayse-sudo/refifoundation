@@ -380,6 +380,7 @@ img { max-width: 100%; }
 .refi-cms-page-body a { color: var(--refi-blue-700); text-decoration: underline; text-underline-offset: 3px; }
 
 
+/* ---------------------------------------------------------------------------
    Content manager (/admin)
 
    Uses the existing design tokens so the dashboard feels part of the site
