@@ -32,3 +32,6 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# Private CMS recovery backups (may contain unpublished editorial content)
+/.cms-backups/
