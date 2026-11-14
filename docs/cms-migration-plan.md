@@ -66,13 +66,16 @@ write access to a public repository.
   verify the project reference and ownership in the approved account before
   provisioning another project or applying migrations.
 - `package.json` has no database, auth, or storage client.
-- Only two environment variables are referenced: `GITHUB_CLIENT_ID` and
-  `GITHUB_CLIENT_SECRET`.
-- The repository has no committed `.vercel` project link. A linked REFI Vercel
-  project is visible through the connected deployment context, but its environment
-  variables, deploy hooks and the separate `refi-foundation` team scope have not
-  been verified. Do not claim settings are absent without inspecting the correct
-  project and team.
+- At the baseline `main` commit, only `GITHUB_CLIENT_ID` and
+  `GITHUB_CLIENT_SECRET` were referenced. The CMS and feature integration branch
+  adds the Supabase, Brevo, Paystack and API-Football settings documented in the
+  owner handover.
+- The repository has no committed `.vercel` project link. The Vercel project is
+  accessible through the connected deployment context under the Valoria team.
+  Its Production environment currently contains only `NEXT_PUBLIC_SITE_URL`,
+  `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`; no Supabase, Brevo, Paystack,
+  API-Football or cron credentials are configured. Option A does not require a
+  deploy hook.
 
 ### A previous attempt exists
 
