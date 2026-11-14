@@ -65,7 +65,7 @@ branch-protection and ruleset endpoints). This is an owner action.
 Content is authored at `/admin` (a first-party Next.js page) and stored in Supabase once the dedicated REFI project is provisioned; until then the public site uses committed JSON snapshots.
 `src/lib/content.ts` still reads content at build time: either from Supabase using
 the anon key, or from the committed JSON in `content/` when no backend is
-configured or the backend is unreachable. The public site therefore stays statically generated and keeps working from committed JSON snapshots even if Supabase is paused or removed.
+configured or the backend is unreachable. The public site uses ISR-cached pages and keeps working from committed JSON snapshots if Supabase is paused or removed. It does not query the database for every visitor request.
 
 Replaced the previous Decap/GitHub editor. `public/admin/` and the
 `/api/cms/auth` + `/api/cms/callback` OAuth routes were deleted along with it.
