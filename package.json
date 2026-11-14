@@ -11,7 +11,8 @@
     "verify:sitemap": "node scripts/verify-sitemap.mjs",
     "verify:live-feed": "node scripts/verify-live-feed.mjs",
     "verify:donations": "node scripts/verify-donations.mjs",
-    "verify:games": "node scripts/verify-games.mjs"
+    "verify:games": "node scripts/verify-games.mjs",
+    "verify:contact": "node --experimental-strip-types --test scripts/verify-contact.mjs"
   },
   "dependencies": {
     "lucide-react": "1.61.0",
