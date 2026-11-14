@@ -10,6 +10,7 @@ const links = [
   { href: "/impact", label: "Impact" },
   { href: "/events", label: "Events" },
   { href: "/stories", label: "Stories" },
+  { href: "/contact", label: "Contact" },
   { href: "/matches", label: "Live Matches" },
   { href: "/play", label: "Play for Impact" },
   { href: "/get-involved", label: "Get Involved" },
