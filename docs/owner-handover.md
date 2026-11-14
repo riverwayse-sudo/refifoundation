@@ -52,8 +52,8 @@ supply, and shipping a half-working version would be misleading to visitors.
 
 The content management system lets the Foundation publish without touching
 GitHub. Editors sign in at `/admin` with an email address and password, and
-changes are written to a Supabase database. Publishing requests a rebuild, which
-takes a minute or two.
+changes are written to a Supabase database. Publishing invalidates the CMS data and
+page caches; affected pages refresh on the next request without a full deployment.
 
 This replaces the earlier GitHub-based editor. The GitHub OAuth app and its
 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` settings are no longer used by the new CMS and can be removed from Vercel after production acceptance.
@@ -114,7 +114,6 @@ credentials must be confirmed before any migration or environment change.
    | `SUPABASE_URL` | Supabase, Project Settings, API | |
    | `SUPABASE_ANON_KEY` | Supabase, Project Settings, API | Public by design; RLS must protect data |
    | `SUPABASE_SERVICE_ROLE_KEY` | Supabase, Project Settings, API | **Server only.** Never prefix with `NEXT_PUBLIC_` |
-   | `VERCEL_DEPLOY_HOOK_URL` | Vercel, Settings, Git, Deploy Hooks | Create a hook for the `main` branch |
    | `CRON_SECRET` | Generate a long random secret | Protects the keep-alive endpoint |
    | `BREVO_API_KEY` | Brevo API settings | **Server-only secret** for contact delivery |
    | `REFI_CONTACT_EMAIL` | Confirmed Foundation inbox | Contact enquiry recipient |
@@ -124,7 +123,7 @@ credentials must be confirmed before any migration or environment change.
    | `PAYSTACK_API_BASE` | Paystack API base URL | Optional; defaults to the official API endpoint |
 6. Redeploy. Then visit `/admin` and sign in.
 
-Current Vercel production environment inspection found only `NEXT_PUBLIC_SITE_URL`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No Supabase, Brevo, Paystack, deploy-hook or cron credentials are currently configured. The old GitHub OAuth values can be removed after the new CMS is accepted.
+Current Vercel production environment inspection found only `NEXT_PUBLIC_SITE_URL`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No Supabase, Brevo, Paystack or cron credentials are currently configured. The old GitHub OAuth values can be removed after the new CMS is accepted.
 
 Both `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` must be **server-only**. Do not
 prefix them with `NEXT_PUBLIC_`; that would publish the secret to the browser.
@@ -138,16 +137,13 @@ a CMS would let anyone request an account.
 ### How publishing works
 
 - **Save draft** stores the item without showing it on the site.
-- **Publish** marks it live and asks the site to rebuild. The site updates a minute
-  or two later.
-- **Future dates are editorial dates, not automatic timers.** The public site is
-  statically generated. A future-dated story or page stays hidden in the build made
-  when it is saved, and it will appear only after a later website rebuild runs after
-  its publish date. Events are included or excluded at build time; an event already
-  on the site can remain visible after it starts until another rebuild. Do not use
-  this setup for time-critical launches or promise automatic publication at an
-  exact minute. Publish time-sensitive material after its intended release time,
-  or arrange a deployment at/after the scheduled time.
+- **Publish** marks the item live and invalidates the tagged content and route caches.
+  Affected pages refresh on the next request; no full-site deployment is created.
+- **Future dates use hourly ISR.** Stories and pages stay hidden until their
+  publish time, then appear on the next hourly refresh (within about an hour).
+  Events are removed on the next hourly refresh after their start time. This is
+  automatic, but not an exact-minute scheduler; do not promise a precise release
+  second for time-critical announcements.
 - **Supporting pages** created under "Other pages" are published at
   `/pages/<slug>` and included in the sitemap. The special slug `our-work`
   manages the existing `/our-work` route instead; it is not duplicated under
@@ -172,11 +168,11 @@ a CMS would let anyone request an account.
   ```
 
   Setting it back to `false` withdraws the figure from the public site at the next
-  rebuild. If this becomes a frequent task, an in-app toggle is a small addition —
+  hourly refresh; use the publish action for immediate cache invalidation when needed. If this becomes a frequent task, an in-app toggle is a small addition —
   it was left out deliberately rather than built without a chance to review the
   editorial rule.
-- **Nothing is lost if the rebuild fails.** The content is already saved; it simply
-  appears at the next deployment.
+- **Nothing is lost if a refresh fails.** The content is already saved; the cached
+  page remains available and the next ISR refresh retries the read.
 
 ### Keeping it awake, and backups
 
@@ -257,10 +253,9 @@ once. Please read before touching environment variables or hosting settings.
 ### Publishing content
 
 Once section 3 is done: sign in at `/admin`, edit, and choose **Save draft** or
-**Publish**. Publishing writes to Supabase and requests a Vercel rebuild; no GitHub
-pull request is involved in the editorial workflow. A successful deploy-hook
-request means a rebuild was requested, not that the deployment has finished or
-that every page has been visually verified.
+**Publish**. Publishing writes to Supabase and invalidates the CMS cache; the next request
+regenerates affected pages through ISR. No GitHub pull request or deployment is
+involved in the editorial workflow.
 
 ### Restoring the site if a change breaks it
 
@@ -344,9 +339,7 @@ service-role key in a `NEXT_PUBLIC_*` variable or commit it to Git.
 
 ### Scheduled publishing limitation
 
-The CMS does not currently schedule deployments at future publish times. The daily
-keep-alive cron only checks Supabase availability; it does not rebuild the website.
-Future-dated stories and pages require a later deployment after their date to appear.
-Events are filtered at build time, so an event already included in a deployment can
-remain visible after it starts. Automatic scheduling requires a separately approved
-scheduler or a change to the publishing architecture.
+The CMS uses hourly ISR revalidation for scheduled content. Future-dated stories
+and pages appear on the next hourly refresh after their publish time; events are
+removed on the next hourly refresh after they start. The daily keep-alive cron only
+checks Supabase availability. This is not an exact-minute scheduler.
