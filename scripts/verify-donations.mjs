@@ -273,6 +273,13 @@ async function main() {
   const event = { event: "charge.success", data: { reference: REFERENCE, status: "success" } };
   const rawBody = JSON.stringify(event);
 
+  const oversizedWebhook = await fetch(`${site.origin}/api/paystack/webhook`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ event: "charge.success", data: { reference: REFERENCE, padding: "x".repeat(70_000) } }),
+  });
+  check("oversized webhook payload is rejected before processing", oversizedWebhook.status === 413, `status ${oversizedWebhook.status}`);
+
   check("unsigned webhook is rejected", (await postWebhook(site.origin, event, null)).status === 401, "rejected");
   check("forged signature is rejected", (await postWebhook(site.origin, event, "deadbeef".repeat(16))).status === 401, "rejected");
 
