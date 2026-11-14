@@ -45,10 +45,10 @@ export async function restRequest<T>(
     prefer?: string;
     signal?: AbortSignal;
     /**
-     * Fetch cache mode. Public build-time reads use "force-cache" so the result is
-     * baked into the static output and the route stays statically rendered; that is
-     * what keeps a paused database from affecting the live site. Write paths use
-     * "no-store".
+     * Fetch cache mode. Public reads use "force-cache" with a one-hour revalidation
+     * window and a shared tag. Pages use ISR; publishing invalidates the tag and
+     * affected paths so the next request refreshes content without a full deployment.
+     * Write paths use "no-store".
      */
     cacheMode?: RequestCache;
     /** Milliseconds before the request is abandoned. Defaults to 10s. */
@@ -75,7 +75,7 @@ export async function restRequest<T>(
       headers: headers(init.key, init.prefer ? { Prefer: init.prefer } : undefined),
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       cache: init.cacheMode ?? "no-store",
-      ...(init.nextTags ? { next: { tags: init.nextTags } } : {}),
+      ...(init.nextTags ? { next: { tags: init.nextTags, revalidate: 3600 } } : {}),
       signal,
     });
 
@@ -115,10 +115,10 @@ export function readVisibleContent(
   signal?: AbortSignal,
 ): Promise<SupabaseResult<ContentRow[]>> {
   const query = `content?collection=eq.${encodeURIComponent(collection)}&select=*`;
-  // force-cache keeps this read out of the runtime path so the route stays static.
-  // The tag is explicitly invalidated by the publish route before the deploy hook
-  // runs; otherwise Next's Data Cache can survive deployments and serve stale CMS
-  // content even though a fresh build was triggered.
+  // Cache public reads for one hour. The publish route invalidates this tag and
+  // the affected route paths, so normal publishing refreshes pages on demand
+  // without creating a deployment. The one-hour window also releases scheduled
+  // content and removes events after their start time without manual intervention.
   return restRequest<ContentRow[]>(query, {
     key: anonKey,
     signal,
