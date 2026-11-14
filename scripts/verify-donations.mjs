@@ -31,6 +31,7 @@ let txAmount = CANONICAL_AMOUNT;
 let txCurrency = "NGN";
 let txReference = REFERENCE;
 let txMetadata = { expected_amount_minor: CANONICAL_AMOUNT, expected_currency: "NGN" };
+let verifyMode = "ok"; // ok | error500 | unreachable
 
 // Mock Supabase state.
 let storeMode = "ok"; // ok | missing-table | error500 | unreachable
@@ -52,6 +53,8 @@ function startMockPaystack() {
         return;
       }
       if (url.pathname.startsWith("/transaction/verify/")) {
+        if (verifyMode === "error500") { send(500, { message: "temporary provider failure" }); return; }
+        if (verifyMode === "unreachable") { req.socket.destroy(); return; }
         send(200, {
           status: true,
           data: {
@@ -296,8 +299,16 @@ async function main() {
   // 12. A signed event that Paystack cannot confirm is not recorded.
   txStatus = "abandoned";
   const unverifiable = await postWebhook(site.origin, rawBody, sign(rawBody));
-  check("unverifiable payment is not recorded", unverifiable.body.verified === false, JSON.stringify(unverifiable.body));
+  check("permanently unsuccessful payment is acknowledged but not recorded", unverifiable.status === 200 && unverifiable.body.verified === false, JSON.stringify(unverifiable.body));
   txStatus = "success";
+
+  verifyMode = "error500";
+  const providerError = await postWebhook(site.origin, rawBody, sign(rawBody));
+  check("Paystack 5xx verification failure is retryable", providerError.status === 503 && providerError.body.retryable === true, JSON.stringify(providerError));
+  verifyMode = "unreachable";
+  const providerDown = await postWebhook(site.origin, rawBody, sign(rawBody));
+  check("Paystack network failure is retryable", providerDown.status === 503 && providerDown.body.retryable === true, JSON.stringify(providerDown));
+  verifyMode = "ok";
 
   // 13. Totals distinguish a known zero from an unknown figure.
   storeMode = "ok";
@@ -322,16 +333,16 @@ async function main() {
   storeMode = "missing-table";
   storedRows = [];
   const missing = await postWebhook(site.origin, rawBody, sign(rawBody));
-  check("missing table is not reported as recorded", missing.body.recorded === false, JSON.stringify(missing.body));
-  check("missing table reports an error", Boolean(missing.body.error), missing.body.error || "(none)");
+  check("missing table is not reported as recorded", missing.status === 503 && missing.body.recorded === false, JSON.stringify(missing.body));
+  check("missing table remains retryable until storage is provisioned", missing.body.retryable === true && Boolean(missing.body.error), JSON.stringify(missing.body));
 
   storeMode = "error500";
   const storeErr = await postWebhook(site.origin, rawBody, sign(rawBody));
-  check("store error is not reported as recorded", storeErr.body.recorded === false, JSON.stringify(storeErr.body));
+  check("store 5xx is retryable and not reported as recorded", storeErr.status === 503 && storeErr.body.recorded === false && storeErr.body.retryable === true, JSON.stringify(storeErr.body));
 
   storeMode = "unreachable";
   const storeDown = await postWebhook(site.origin, rawBody, sign(rawBody));
-  check("unreachable store is not reported as recorded", storeDown.body.recorded === false, JSON.stringify(storeDown.body));
+  check("unreachable store is retryable and not reported as recorded", storeDown.status === 503 && storeDown.body.recorded === false && storeDown.body.retryable === true, JSON.stringify(storeDown.body));
 
   storeMode = "ok";
   const fundraise = await html(site.origin, "/fundraise");
