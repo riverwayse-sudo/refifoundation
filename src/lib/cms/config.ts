@@ -28,9 +28,6 @@ export const isContentBackendConfigured = Boolean(supabaseUrl && supabaseAnonKey
 /** True when the write path is configured. Required for the dashboard to work. */
 export const isWriteBackendConfigured = Boolean(supabaseUrl && supabaseServiceRoleKey);
 
-/** The deploy hook that rebuilds the public site after a publish. */
-export const deployHookUrl = process.env.VERCEL_DEPLOY_HOOK_URL ?? "";
-
 /** Shared secret that guards the keep-alive cron endpoint. */
 export const cronSecret = process.env.CRON_SECRET ?? "";
 
