@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requestPasswordReset } from "@/lib/cms/auth";
 import { clientKey, rateLimit } from "@/lib/cms/rate-limit";
+import { readJsonBody } from "@/lib/cms/request-body";
 
 export const runtime = "nodejs";
 
@@ -15,12 +16,11 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  const parsed = await readJsonBody(request, 2 * 1024);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status, headers: { "Cache-Control": "no-store" } });
   }
+  const body = parsed.value;
 
   const { email } = (body ?? {}) as { email?: unknown };
   if (typeof email === "string" && email.includes("@")) {
