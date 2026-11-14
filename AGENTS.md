@@ -23,8 +23,9 @@ npm audit
 ## CI
 
 `.github/workflows/ci.yml` runs on every pull request and on pushes to `main`:
-install from the lockfile, lint, type check, `test:cms`, `test:rls`, build, then
-`verify:sitemap`. The job is named **`verify`**, so the status check to require in
+install from the lockfile, lint, type check, CMS unit/RLS tests, contact and
+navigation regressions, build, sitemap, live-feed, donation and game verification.
+The job is named **`verify`**, so the status check to require in
 branch protection is `verify`.
 
 `test:rls` runs on the GitHub runner, which has Docker, so the row-level security
@@ -64,8 +65,7 @@ branch-protection and ruleset endpoints). This is an owner action.
 Content is authored at `/admin` (a first-party Next.js page) and stored in Supabase once the dedicated REFI project is provisioned; until then the public site uses committed JSON snapshots.
 `src/lib/content.ts` still reads content at build time: either from Supabase using
 the anon key, or from the committed JSON in `content/` when no backend is
-configured or the backend is unreachable. The public site therefore stays static
-and keeps working even if Supabase is paused or removed.
+configured or the backend is unreachable. The public site therefore stays statically generated and keeps working from committed JSON snapshots even if Supabase is paused or removed.
 
 Replaced the previous Decap/GitHub editor. `public/admin/` and the
 `/api/cms/auth` + `/api/cms/callback` OAuth routes were deleted along with it.
@@ -124,6 +124,21 @@ Replaced the previous Decap/GitHub editor. `public/admin/` and the
   code reads one the doc does not document. This caught a real
   `CMS_DEPLOY_HOOK_URL` vs `VERCEL_DEPLOY_HOOK_URL` mismatch.
 
+
+- **Never use Valoria's Supabase project for REFI.** The dedicated REFI project is
+  not visible in the currently connected Supabase organisation. Confirm the
+  previously connected REFI project with the owner before creating anything.
+- **Migration versions are sequential across features.** Donations are
+  `0001_donations.sql`, game scores are `0002_game_scores.sql`, and CMS is
+  `0003_cms_schema.sql`. Never introduce duplicate migration version prefixes.
+- **The public leaderboard is intentionally empty.** Browser-submitted scores are
+  validated but not stored because there is no server-issued game session proving
+  a score is genuine. Do not persist or rank client-reported scores until that
+  integrity mechanism exists.
+- **No production release without explicit owner approval.** Work on feature
+  branches and verify CI first; do not merge the release branch into `main` or
+  trigger a production deployment without approval.
+
 ### Testing without adding a framework
 
 `npm run test:cms` uses Node 24's built-in test runner with native TypeScript
@@ -145,16 +160,13 @@ navigation still work.
 
 Preview deployments sit behind Vercel Authentication (SSO), so previews cannot
 be inspected without a protection-bypass secret. Verify against production, or
-ask the owner for a bypass secret. The owner must change environment variables
-— the agent has no Vercel project access.
+ask the owner for a bypass secret. The connected Vercel project can be inspected, but secret values must be supplied and configured by the owner through Vercel. Never paste secrets into chat.
 
 ## Deferred / out of scope
 
-- **Logo**: the original asset is not in the repository. Do not recreate or
-  substitute it. Work is blocked until the client supplies the file.
-- **Sports match centre** (`feat/cms-live-match-foundation`): deferred.
-- **Contact form and donations** (`/donate` is a static page): blocked on
-  credentials (Brevo, Paystack). Do not ship forms that cannot deliver.
+- **Logo**: PR #21 contains a derived asset from the supplied attachment, but it is not merged. Obtain visual approval or the original file before merging; never recreate or substitute it.
+- **Match Centre and Play for Impact** are integrated on the closeout branch. Provider acceptance, payment configuration and production release remain pending.
+- **Contact form and donations** are implemented on the closeout branch but not production-ready until Brevo, Paystack and the dedicated REFI Supabase credentials are configured and end-to-end tested. Do not announce non-delivering forms.
 - **The mobile navigation is the only route to interior pages below 800px**;
   `.refi-nav-links` is hidden there. Do not remove `MobileNavigation` from
   `SiteHeader` without replacing it.
