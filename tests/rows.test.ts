@@ -15,14 +15,14 @@ test("database slug is restored to the public content record", () => {
   assert.equal(record.publishedAt, "2026-01-02T00:00:00Z");
 });
 
-test("explicit content publish date takes precedence over database timestamp", () => {
+test("database publish timestamp is authoritative over stale content metadata", () => {
   const [record] = rowsToContentRecords([{
     slug: "dated-story",
     data: { title: "Dated", publishedAt: "2026-02-03T00:00:00Z" },
     published: true,
     published_at: "2026-02-04T00:00:00Z",
   }]);
-  assert.equal(record.publishedAt, "2026-02-03T00:00:00Z");
+  assert.equal(record.publishedAt, "2026-02-04T00:00:00Z");
 });
 
 test("invalid row payloads are ignored", () => {
