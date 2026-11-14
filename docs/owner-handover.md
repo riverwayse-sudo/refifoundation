@@ -28,10 +28,7 @@ All of these return `200` on production:
 | Donate | `/donate` | Live (static — see section 4) |
 | Marketing | `/marketing` | Live |
 
-The public site is fully static. It has no database and no third-party service
-that must be online for pages to render. The content manager (section 3) is a
-separate, optional system: the site serves its committed copy of the content and
-keeps working whether or not that system is connected.
+The public site is statically generated. It reads Supabase at build time when the CMS is configured, and falls back to committed JSON snapshots when the backend is unavailable or not yet provisioned. No database request is required to render pages at runtime.
 
 Everything here runs at **zero recurring cost**. No paid tools, subscriptions or
 services are used, and none are required.
@@ -43,10 +40,10 @@ supply, and shipping a half-working version would be misleading to visitors.
 
 | Item | Why it is held back | What unblocks it |
 |---|---|---|
-| CMS not yet connected | CMS implementation is integrated on `feat/supabase-cms-integration`; the dedicated REFI Supabase project and production configuration still need direct verification | Section 3 (verify project, configure and accept) |
+| CMS not yet connected | CMS implementation is being consolidated on `feat/supabase-cms-integration`; the dedicated REFI Supabase project and production configuration still need direct verification | Section 3 (verify project, configure and accept) |
 | Contact form | Implemented and integrated in PR #31; Brevo configuration, edge rate limiting and end-to-end delivery test remain outstanding | Section 4 |
 | Online donations | Payment code is integrated in PR #27/#30, but Paystack and Supabase credentials are not configured; no live payment is enabled | Section 4 |
-| Sports match centre | Match Centre and Play for Impact are integrated in PR #27; production release and live visual/provider acceptance remain outstanding | Not part of this brief |
+| Match Centre / Play for Impact | Integrated in PR #27; production release and live visual/provider acceptance remain outstanding | Section 4 |
 | Official logo | Assets and site integration are in draft PR #21; visual approval and merge remain outstanding | Section 5 |
 
 ## 3. The CMS
@@ -59,11 +56,9 @@ takes a minute or two.
 This replaces the earlier GitHub-based editor. The GitHub OAuth app and its
 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` settings are no longer used by the new CMS and can be removed from Vercel after production acceptance.
 
-### Status: implementation in draft PR #20; live provisioning not verified
+### Status: integrated feature branch; live provisioning not verified
 
-The CMS implementation and automated checks are in the integration branch. The dedicated
-REFI Supabase project, its ownership, schema, administrator allow-list and production
-environment variables have not been verified from the available connected account.
+The CMS implementation, SQL schema and automated checks are being consolidated on `feat/supabase-cms-integration`. The dedicated REFI Supabase project, its ownership, schema, administrator allow-list and production environment variables have not been verified from the available connected account.
 Do not create another project until the owner confirms whether the REFI-specific project
 created earlier is the intended CMS project. Until the credentials and migration are
 verified against that project, treat /admin as not accepted for production.
@@ -81,8 +76,7 @@ verified against that project, treat /admin as not accepted for production.
 | Public pages unaffected | Every public page returns 200 with no backend configured | Pass |
 | Build and type checks | `npm run build`, `npm run typecheck`, `npm run lint` | Pass |
 
-The CMS code has not yet been deployed to production. The tests can fail. This was checked deliberately by weakening a policy and by
-granting a temporary permission, and confirming the suite caught both.
+The CMS code has not yet been deployed to production. The original CMS branch's unit and RLS tests passed; the consolidated integration branch must pass its full CI suite before merge. The tests were deliberately checked against weakened policies and temporary permissions to confirm they catch regressions.
 
 ### What has not been verified
 
@@ -92,7 +86,7 @@ credentials must be confirmed before any migration or environment change.
 
 ### Connecting it (owner action)
 
-1. First confirm the existing REFI-specific Supabase project the owner previously connected. The connected Supabase account currently exposes no REFI project (only Valoria projects), so do not create a duplicate or use a Valoria project. If no REFI project exists, obtain owner approval to create `refi-foundation` on the **Free** plan in `eu-west-1`.
+1. First confirm the existing REFI-specific Supabase project the owner previously connected. The connected Supabase account currently exposes no REFI project (only Valoria projects), so do not create a duplicate or use a Valoria project. If no REFI project exists, obtain owner approval before creating `refi-foundation` on the **Free** plan; confirm the region with the owner.
 2. In the project, open the SQL editor and run the contents of
    `supabase/migrations/0003_cms_schema.sql`. This creates the tables, the
    access rules, and the public `media` storage bucket for images, so there is
@@ -108,6 +102,12 @@ credentials must be confirmed before any migration or environment change.
    | `SUPABASE_SERVICE_ROLE_KEY` | Supabase, Project Settings, API | **Server only.** Never prefix with `NEXT_PUBLIC_` |
    | `VERCEL_DEPLOY_HOOK_URL` | Vercel, Settings, Git, Deploy Hooks | Create a hook for the `main` branch |
    | `CRON_SECRET` | Any long random string | Protects the keep-alive endpoint |
+    | `BREVO_API_KEY` | Brevo API settings | **Server-only secret** for contact delivery |
+    | `REFI_CONTACT_EMAIL` | Confirmed Foundation inbox | Contact enquiry recipient |
+    | `BREVO_SENDER_EMAIL` | Verified sender in Brevo | Must be authorised in Brevo |
+    | `BREVO_SENDER_NAME` | Approved display name | Optional |
+    | `PAYSTACK_SECRET_KEY` | Paystack API settings | **Server-only secret** |
+    | `PAYSTACK_API_BASE` | Paystack API base URL | Optional; defaults to official API endpoint |
 | `BREVO_API_KEY` | Brevo API settings | **Server-only secret** for contact delivery |
 | `REFI_CONTACT_EMAIL` | Confirmed Foundation inbox | Contact enquiry recipient |
 | `BREVO_SENDER_EMAIL` | Verified sender in Brevo | Must be authorised in Brevo |
@@ -116,6 +116,8 @@ credentials must be confirmed before any migration or environment change.
 | `PAYSTACK_API_BASE` | Paystack API base URL | Optional; defaults to the official API endpoint |
 
 5. Redeploy. Then visit `/admin` and sign in.
+
+Current Vercel production environment inspection found only `NEXT_PUBLIC_SITE_URL`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No Supabase, Brevo, Paystack, deploy-hook or cron credentials are currently configured. The old GitHub OAuth values can be removed after the new CMS is accepted.
 
 Both `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` must be **server-only**. Do not
 prefix them with `NEXT_PUBLIC_`; that would publish the secret to the browser.
@@ -197,12 +199,12 @@ Restore is a non-destructive upsert: it restores records in the backup, includin
 - **"Not authorised"** means the account is not listed in `cms_admins`. Add the
   user id there.
 - **"Sign-in is temporarily unavailable"** usually means an environment variable is
-  missing or misspelled. Check all five above, then redeploy.
+  missing or misspelled. Check the CMS variables above, then redeploy.
 - **"Too many requests"** is the rate limiter. Wait fifteen minutes.
 
 ## 4. Contact form and donations
 
-### Contact form — implementation ready for review, not production accepted
+### Contact form — implemented, awaiting production configuration
 
 A contact page and server-side Brevo endpoint are integrated in PR #31 on the integration branch. The endpoint validates input, bounds request bodies, escapes
 HTML, uses a honeypot and request timeout, and includes best-effort per-instance
@@ -215,6 +217,10 @@ mailto:hello@refifoundation.org fallback remains the reliable contact route.
 ### Donations
 
 `/donate` and the Paystack initialization, verification and webhook code are integrated in PR #27/#30. No live payment is enabled until the REFI Supabase migrations and `PAYSTACK_SECRET_KEY` are configured, then test-mode and live-mode transactions are verified.
+
+### Play for Impact leaderboard
+
+The games are implemented, but the public leaderboard is intentionally empty. Browser-submitted scores are validated and then **not stored**, because the server cannot prove that a browser-reported score came from a genuine game session. Do not publish rankings or promise leaderboard functionality until server-issued game sessions and durable score verification are implemented. Fundraising totals must count only successfully verified Paystack transactions.
 
 ## 5. The logo
 
@@ -272,7 +278,7 @@ should read "RAISING • EMPOWERING • TRANSFORMING LIVES."
 | Branch protection | Turn on a `main` rule requiring a pull request and the `verify` check (see below) |
 | Story pages in sitemap | Fixed — published stories now appear in `sitemap.xml` |
 
-The remaining work is acceptance and configuration: verify the dedicated REFI CMS backend, approve the logo, configure Brevo and Paystack, test payment and contact delivery, and complete live Match Centre/Play for Impact acceptance. Production release remains a separate approval gate.
+The remaining work is acceptance and configuration: verify the dedicated REFI CMS backend, approve the logo, configure Brevo and Paystack, test payment and contact delivery, complete live Match Centre acceptance, and decide whether verified leaderboard sessions are in scope. Production release remains a separate approval gate.
 
 ### Sitemap and indexing
 
@@ -290,7 +296,8 @@ remove the public site from search engines, which is not wanted.
 ### Automatic checks on changes
 
 Every pull request runs automated checks (`.github/workflows/ci.yml`): install
-from the lockfile, lint, type check, production build, and a sitemap test. A
+from the lockfile, lint, type check, CMS unit and RLS tests, contact/navigation
+regressions, production build, sitemap, live-feed, donation and game tests. A
 failing check blocks merging once branch protection is enabled. The check is
 named `verify`.
 
@@ -307,9 +314,7 @@ that on: repository **Settings → Rules → Rulesets**, create a rule targeting
 - Block force pushes
 - Block branch deletion
 
-This does not conflict with the CMS. Drafts are committed to a `cms/*` branch and
-opened as a pull request, so normal publishing already goes through a pull
-request. Requiring one changes nothing about how content is written.
+This does not govern editorial publishing through `/admin`: content is stored in Supabase and the publish action requests a Vercel rebuild. Branch protection applies to code changes only; editorial access is controlled by the `cms_admins` allow-list.
 
  
 
