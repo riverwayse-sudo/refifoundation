@@ -158,9 +158,12 @@ navigation still work.
 
 ## Vercel
 
-Preview deployments sit behind Vercel Authentication (SSO), so previews cannot
-be inspected without a protection-bypass secret. Verify against production, or
-ask the owner for a bypass secret. The connected Vercel project can be inspected, but secret values must be supplied and configured by the owner through Vercel. Never paste secrets into chat.
+Only `main` and the controlled `staging` branch deploy automatically; feature
+branches run GitHub CI without creating Vercel previews. Staging is protected by
+Vercel Authentication (SSO), so visual acceptance needs an authorised Vercel
+session or a protection-bypass secret. The connected Vercel project can be
+inspected, but secret values must be supplied and configured by the owner.
+Never ask for secrets in chat.
 
 ## Deferred / out of scope
 
