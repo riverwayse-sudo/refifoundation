@@ -3,7 +3,7 @@
 **Status:** Prepared for owner-led setup. This document does not mean a Supabase
 project has been created, connected, or accepted.
 
-**Related implementation:** draft PR #20. The audit corrections from PR #24 have been integrated into the PR #20 feature branch.
+**Related implementation:** `feat/supabase-cms-integration`. The CMS code is integrated into the consolidated feature branch; production provisioning remains pending.
 **Architecture:** Option B — Supabase-backed editor, static Next.js public site,
 JSON snapshot fallback, and a Vercel rebuild after publishing.
 
@@ -32,22 +32,26 @@ Before creating anything, confirm all of the following:
 **Stop if the owner does not accept the static publishing limitation.** Do not
 silently change the public website to runtime database rendering.
 
-## 2. Create the dedicated Supabase project
+## 2. Confirm or create the dedicated Supabase project
 
-1. Sign in to Supabase using the organisation-approved account.
-2. Create a new project named clearly, for example 'refi-foundation-cms'.
-3. Select the Free plan only if the owner has reaffirmed the zero-recurring-cost
-   requirement.
-4. Use a strong, unique database password and store it in the organisation's
+1. First locate the REFI-specific Supabase project the owner previously said was
+   connected. Confirm its organisation, project reference, region and ownership.
+2. The currently connected Supabase organisation does not expose a REFI project;
+   it exposes Valoria projects only. Do not use those projects for REFI.
+3. Do not create a replacement project until the owner confirms that the earlier
+   REFI project is unavailable or no longer intended.
+4. If the owner confirms that no REFI project exists, obtain explicit approval
+   before creating `refi-foundation` on the Free plan. Confirm the region with
+   the owner before provisioning.
+5. Use a strong, unique database password and store it in the organisation's
    password manager. It is not needed by the website application.
-5. Choose a region appropriate for the Foundation's users and operating team.
 6. Wait until the project reports that it is ready.
-7. Record the project reference and dashboard URL in the client's secure
-   operations record. Do not put credentials in GitHub issues, pull requests,
-   chat messages, or this document.
+7. Record the project reference and dashboard URL in the secure operations
+   record. Never put credentials in GitHub issues, pull requests, chat messages,
+   or this document.
 
-Do not create a second project if one already exists for this exact REFI CMS.
-First verify ownership and purpose with the client.
+This is a hard stop: never use Valoria's Supabase project or create a duplicate
+without the owner's confirmation.
 
 ## 3. Apply the database migration
 
