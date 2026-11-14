@@ -93,6 +93,7 @@ test("sends a validated enquiry to Brevo and returns success", async () => {
   };
   const response = await POST(request(validPayload()));
   assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
   assert.deepEqual(await json(response), { ok: true });
   assert.equal(sent.to[0].email, "contact@example.org");
   assert.equal(sent.replyTo.email, "person@example.com");
