@@ -316,7 +316,7 @@ that on: repository **Settings → Rules → Rulesets**, create a rule targeting
 - Block force pushes
 - Block branch deletion
 
-This does not govern editorial publishing through `/admin`: content is stored in Supabase and the publish action requests a Vercel rebuild. Branch protection applies to code changes only; editorial access is controlled by the `cms_admins` allow-list.
+This does not govern editorial publishing through `/admin`: content is stored in Supabase and the publish action invalidates ISR caches. Branch protection applies to code changes only; editorial access is controlled by the `cms_admins` allow-list.
 
  
 
