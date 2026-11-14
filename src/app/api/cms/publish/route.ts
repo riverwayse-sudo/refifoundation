@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/cms/auth";
 import { deployHookUrl } from "@/lib/cms/config";
 import { serviceRequest } from "@/lib/cms/supabase";
+import { readJsonBody } from "@/lib/cms/request-body";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,12 +62,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authorised." }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  const parsed = await readJsonBody(request, 4 * 1024);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status, headers: { "Cache-Control": "no-store" } });
   }
+  const body = parsed.value;
 
   const { collection, slug, publishAt } = (body ?? {}) as {
     collection?: unknown;
