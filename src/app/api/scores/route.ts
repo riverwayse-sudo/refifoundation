@@ -24,11 +24,49 @@ export const runtime = "nodejs";
  *  - the display name is sanitised and cannot contain an email or a link
  *  - submissions are rate limited per client
  */
+async function readBoundedBody(request: Request): Promise<string> {
+  const declaredLength = Number(request.headers.get("content-length") || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_SCORE_BODY_BYTES) {
+    throw new RangeError("body-too-large");
+  }
+  if (!request.body) return "";
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_SCORE_BODY_BYTES) {
+        await reader.cancel();
+        throw new RangeError("body-too-large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+}
+
 export async function POST(request: Request) {
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim() ||
-    "unknown";
+  // The platform appends its trusted proxy address to X-Forwarded-For.
+  // Using the rightmost address prevents a caller from rotating spoofed
+  // left-hand prefixes to bypass the per-client limiter.
+  const forwarded = (request.headers.get("x-forwarded-for") || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const ip = forwarded.at(-1) || request.headers.get("x-real-ip")?.trim() || "unknown";
 
   if (!allowRequest(`score:${ip}`)) {
     return NextResponse.json(
@@ -37,11 +75,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const raw = await request.text();
-  if (raw.length > MAX_SCORE_BODY_BYTES) {
+  let raw: string;
+  try {
+    raw = await readBoundedBody(request);
+  } catch (error) {
+    const tooLarge = error instanceof RangeError && error.message === "body-too-large";
     return NextResponse.json(
-      { ok: false, accepted: false, error: "The submission is too large." },
-      { status: 413, headers: { "Cache-Control": "no-store" } },
+      { ok: false, accepted: false, error: tooLarge ? "The submission is too large." : "A valid UTF-8 JSON body is required." },
+      { status: tooLarge ? 413 : 400, headers: { "Cache-Control": "no-store" } },
     );
   }
 

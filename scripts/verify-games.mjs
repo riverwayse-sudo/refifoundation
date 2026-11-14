@@ -104,7 +104,7 @@ async function verifyRules() {
   const { pickQuestions, quizScore, quizPercent, QUIZ_QUESTIONS, QUIZ_LENGTH } = await import(mod("brain-battle"));
   const { dropBlock, initialBlock, overlap, stackScore, STACK_MIN_WIDTH } = await import(mod("stack-it"));
   const { resolvePenalty, penaltyScore, keeperDive, PENALTY_TAKERS } = await import(mod("penalty"));
-  const { validateScoreSubmission, validateDisplayName, sanitiseDisplayName, allowRequest } = await import(mod("scores"));
+  const { validateScoreSubmission, validateDisplayName, sanitiseDisplayName, allowRequest, MAX_SCORE_BODY_BYTES } = await import(mod("scores"));
 
   // The four required games must all exist and be playable.
   const required = ["memory-match", "brain-battle", "stack-it", "charity-penalty"];
@@ -232,10 +232,16 @@ async function verifySite(origin) {
 async function verifyScoreApi(origin) {
   console.log("score api");
 
-  const post = async (body, raw) => {
+  const { MAX_SCORE_BODY_BYTES } = await import(new URL("../src/lib/games/scores.ts", import.meta.url));
+
+  const post = async (body, raw, extraHeaders = {}) => {
     const res = await fetch(`${origin}/api/scores`, {
       method: "POST",
-      headers: { "content-type": "application/json", "x-forwarded-for": `10.0.0.${Math.floor(Math.random() * 250)}` },
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": `10.0.0.${Math.floor(Math.random() * 250)}`,
+        ...extraHeaders,
+      },
       body: raw ?? JSON.stringify(body),
     });
     return { status: res.status, body: await res.json().catch(() => ({})) };
@@ -260,6 +266,15 @@ async function verifyScoreApi(origin) {
   const oversized = await post(null, JSON.stringify({ game: "stack-it", score: 1, durationMs: 9000, completed: true, displayName: "A".repeat(5000) }));
   check("an oversized body is rejected with 413", oversized.status === 413, `status ${oversized.status}`);
 
+  // UTF-8 payloads must be bounded by bytes, not JavaScript character count.
+  const unicodeOversized = JSON.stringify({ padding: "é".repeat(1_040) });
+  const unicodeBytes = new TextEncoder().encode(unicodeOversized).byteLength;
+  check("unicode fixture is under the character limit but over the byte limit",
+    unicodeOversized.length < MAX_SCORE_BODY_BYTES && unicodeBytes > MAX_SCORE_BODY_BYTES,
+    `${unicodeOversized.length} characters / ${unicodeBytes} bytes`);
+  const unicodeResponse = await post(null, unicodeOversized);
+  check("a multibyte UTF-8 body over the byte limit is rejected with 413", unicodeResponse.status === 413, `status ${unicodeResponse.status}`);
+
   // Rate limiting: hammer from one address.
   let last = 0;
   for (let i = 0; i < 15; i += 1) {
@@ -271,6 +286,19 @@ async function verifyScoreApi(origin) {
     last = res.status;
   }
   check("repeated submissions are rate limited with 429", last === 429, `last status ${last}`);
+
+  // A caller-controlled prefix must not create a fresh rate-limit identity.
+  let spoofedChainLast = 0;
+  for (let i = 0; i < 15; i += 1) {
+    const res = await post(
+      { game: "stack-it", score: 1, durationMs: 9000, completed: true, displayName: "Ace" },
+      undefined,
+      { "x-forwarded-for": `198.51.100.${i + 1}, 203.0.113.88` },
+    );
+    spoofedChainLast = res.status;
+  }
+  check("spoofed X-Forwarded-For prefixes share the trusted rightmost rate-limit identity",
+    spoofedChainLast === 429, `last status ${spoofedChainLast}`);
 
   const noStore = await fetch(`${origin}/api/scores`, {
     method: "POST",
