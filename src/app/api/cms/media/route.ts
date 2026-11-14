@@ -31,6 +31,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authorised." }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 
+  const declaredLength = Number(request.headers.get("content-length") || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_BYTES + 128 * 1024) {
+    return NextResponse.json({ error: "Upload request is too large." }, { status: 413, headers: { "Cache-Control": "no-store" } });
+  }
+
   if (!supabaseUrl || !supabaseServiceRoleKey) {
     return NextResponse.json({ error: "Media storage is not configured." }, { status: 503 });
   }
