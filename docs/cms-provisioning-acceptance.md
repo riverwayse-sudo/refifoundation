@@ -5,7 +5,7 @@ project has been created, connected, or accepted.
 
 **Related implementation:** `feat/supabase-cms-integration`. The CMS code is integrated into the consolidated feature branch; production provisioning remains pending.
 **Architecture:** Option B — Supabase-backed editor, static Next.js public site,
-JSON snapshot fallback, and a Vercel rebuild after publishing.
+JSON snapshot fallback, and on-demand ISR cache invalidation after publishing.
 
 Use this runbook only for a dedicated REFI Foundation Supabase project. Do not
 reuse another client's or organisation's project.
@@ -17,14 +17,14 @@ reuse another client's or organisation's project.
 Before creating anything, confirm all of the following:
 
 - [ ] The owner accepts the Option B trade-off: publishing saves to Supabase and
-      triggers a site rebuild; it is not instant runtime publishing.
+      invalidates ISR caches; affected pages refresh on the next request without a full deployment.
 - [ ] The owner accepts the documented Supabase Free-tier limitations: inactivity
       pause risk, no automatic backups, and no leaked-password protection.
 - [ ] A dedicated REFI Supabase project will be used.
 - [ ] The person who will be the first CMS administrator has supplied their
       work email address. Do not request or share their password.
 - [ ] Someone with access to the REFI Vercel project can add environment variables
-      and create a production deploy hook.
+      and configure the required server-side environment variables and cron secret.
 - [ ] A preview-access method is available for acceptance testing. Vercel preview
       deployments are protected by SSO; a successful deployment status alone is
       not a visual acceptance test.
@@ -111,23 +111,7 @@ Only add people who are authorised to publish on behalf of the Foundation.
 Removing a user's row revokes CMS administrator access. Do not add an account
 based only on possession of a valid Supabase login.
 
-## 5. Create the Vercel deploy hook
-
-1. Open the REFI Foundation project in Vercel.
-2. Go to Settings → Git → Deploy Hooks.
-3. Create a hook with a recognisable name such as 'REFI CMS publish'.
-4. Select the production branch, expected to be 'main'.
-5. Copy the generated URL directly into the Vercel environment variable in the
-   next section. Treat the URL as a secret: anyone holding it may be able to
-   trigger a deployment.
-6. Do not paste the URL into source code, a commit, a public issue, or this
-   runbook.
-
-A successful request to this hook means a deployment was requested. It does not
-prove that the deployment completed or that the public pages were visually
-checked.
-
-## 6. Import the existing JSON content
+## 5. Import the existing JSON content
 
 Do this once the migration is applied and the server-side project URL and
 service-role key are available in a secure local environment.
@@ -160,7 +144,7 @@ the impact and approved the overwrite.
 The current import includes the homepage and records from stories, projects,
 events, impact metrics and pages. Empty JSON collections simply import zero rows.
 
-## 7. Configure Vercel environment variables
+## 6. Configure Vercel environment variables
 
 In Vercel → Project → Settings → Environment Variables, add the following.
 Use the exact names and do not add a 'NEXT_PUBLIC_' prefix to secrets.
@@ -190,7 +174,7 @@ reused password.
 After saving variables, trigger a fresh deployment. Environment variable changes
 do not retroactively update an already-built deployment.
 
-## 8. First sign-in and functional acceptance
+## 7. First sign-in and functional acceptance
 
 Use a preview deployment with an approved Vercel protection-bypass method, or
 another owner-approved staging path. Do not weaken preview protection globally
@@ -218,13 +202,13 @@ Use clearly labelled test content, not a real public announcement.
 - [ ] Confirm the dashboard reports that the deployment was requested.
 - [ ] Wait for the Vercel production/approved test deployment to finish.
 - [ ] Confirm the story appears in the public listing, its route and the sitemap.
-- [ ] Return the story to draft/unpublished and trigger the required rebuild.
+- [ ] Return the story to draft/unpublished; verify the public page is removed after cache invalidation.
 - [ ] Confirm it is no longer publicly visible and is absent from the sitemap.
 
 ### C. Supporting page
 
 - [ ] Create a test item under Other pages with a unique slug.
-- [ ] Publish it and wait for the rebuild.
+- [ ] Publish it and request the public page; verify the new content is served without a deployment.
 - [ ] Confirm '/pages/<slug>' loads and the sitemap includes it.
 - [ ] Confirm the special 'our-work' slug does not create a duplicate
       '/pages/our-work' route.
@@ -233,7 +217,7 @@ Use clearly labelled test content, not a real public announcement.
 ### D. Media upload
 
 - [ ] Upload a small PNG or JPEG below 4 MB.
-- [ ] Confirm it appears in the editor and renders on the public page after rebuild.
+- [ ] Confirm it appears in the editor and renders on the public page after the next request.
 - [ ] Confirm an unsupported SVG is rejected.
 - [ ] Confirm a file with a spoofed MIME type or mismatched binary signature is
       rejected.
@@ -269,9 +253,9 @@ requests.
 - [ ] Check Vercel cron logs after the first scheduled run.
 
 This endpoint only checks Supabase activity. It does **not** trigger a website
-rebuild or automatically publish future-dated content.
+full-site rebuild; scheduled content appears on the next hourly ISR refresh.
 
-## 9. Editorial rules and known limitations
+## 8. Editorial rules and known limitations
 
 These are product behaviours, not defects to work around:
 
@@ -297,7 +281,7 @@ For a time-sensitive release, publish after the intended release time or arrange
 an owner-approved deployment at/after that time. Do not promise exact-minute
 publication with the current design.
 
-## 10. Backups and recovery
+## 9. Backups and recovery
 
 The Supabase Free plan has no automatic backups. Take a snapshot after meaningful
 editorial sessions and before any bulk operation:
@@ -319,11 +303,11 @@ For a full editorial recovery from the privately stored backup:
 2. Retrieve the latest '.cms-backups/cms-backup.json' from the Foundation's approved private backup storage, place it in the local '.cms-backups/' directory, then confirm its generated date and contents.
 3. Run 'npm run cms:restore' using the approved service-role key.
 4. Confirm the restored rows in Supabase, including draft/published state.
-5. Trigger a rebuild and verify the public site.
+5. Trigger CMS cache invalidation and verify the public site refreshes on the next request.
 
 The restore command upserts every row in the backup but does not delete rows created after that backup. It is a recovery aid, not a destructive point-in-time rollback. The regular 'npm run cms:import' command is for the initial import from the public JSON files, not full editorial recovery.
 
-## 11. Rollback and incident response
+## 10. Rollback and incident response
 
 If the CMS dashboard fails but the public site is healthy:
 
@@ -346,7 +330,7 @@ If a service-role key or deploy-hook URL is exposed, rotate it immediately in
 the provider dashboard and update Vercel. Do not merely delete the message or
 repository reference and assume the secret is safe.
 
-## 12. Acceptance sign-off
+## 11. Acceptance sign-off
 
 Do not mark the CMS production-ready until the owner and implementation reviewer
 have recorded:
@@ -359,7 +343,7 @@ have recorded:
 | Vercel environment variables configured | Pending |
 | First sign-in and non-admin denial | Pending |
 | Draft → publish → public page | Pending |
-| Unpublish → rebuild → public removal | Pending |
+| Unpublish → cache invalidation → public removal | Pending |
 | Media upload and rejection tests | Pending |
 | Sitemap and canonical checks | Pending |
 | Keep-alive cron verified | Pending |
