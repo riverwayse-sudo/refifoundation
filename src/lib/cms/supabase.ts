@@ -53,7 +53,7 @@ export async function restRequest<T>(
     cacheMode?: RequestCache;
     /** Milliseconds before the request is abandoned. Defaults to 10s. */
     timeoutMs?: number;
-    /** Tags used to invalidate cached build-time content after an editorial publish. */
+    /** Tags used to invalidate cached ISR content after an editorial publish. */
     nextTags?: string[];
   },
 ): Promise<SupabaseResult<T>> {
