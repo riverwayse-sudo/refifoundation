@@ -28,7 +28,7 @@ The following routes are on the current production release and were previously v
 | Donate | `/donate` | Live (static — see section 4) |
 | Marketing | `/marketing` | Live |
 
-The public site is statically generated. It reads Supabase at build time when the CMS is configured, and falls back to committed JSON snapshots when the backend is unavailable or not yet provisioned. No database request is required to render pages at runtime.
+The public pages are cached with Next.js ISR. They read Supabase server-side when a cache refresh is needed, not on every visitor request, and fall back to committed JSON snapshots when the backend is unavailable or not yet provisioned. Publishing invalidates the cache so the next request refreshes the affected pages.
 
 Everything here runs at **zero recurring cost**. No paid tools, subscriptions or
 services are used, and none are required.
