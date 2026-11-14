@@ -16,8 +16,8 @@ reuse another client's or organisation's project.
 
 Before creating anything, confirm all of the following:
 
-- [ ] The owner accepts the Option B trade-off: publishing saves to Supabase and
-      invalidates ISR caches; affected pages refresh on the next request without a full deployment.
+- [ ] The owner accepts Option A: publishing saves to Supabase and invalidates ISR
+      caches; affected pages refresh on the next request without a full deployment.
 - [ ] The owner accepts the documented Supabase Free-tier limitations: inactivity
       pause risk, no automatic backups, and no leaked-password protection.
 - [ ] A dedicated REFI Supabase project will be used.
@@ -25,9 +25,9 @@ Before creating anything, confirm all of the following:
       work email address. Do not request or share their password.
 - [ ] Someone with access to the REFI Vercel project can add environment variables
       and configure the required server-side environment variables and cron secret.
-- [ ] A preview-access method is available for acceptance testing. Vercel preview
-      deployments are protected by SSO; a successful deployment status alone is
-      not a visual acceptance test.
+- [ ] A staging-preview access method is available for acceptance testing. The
+      staging deployment is protected by Vercel SSO; CI success alone is not a
+      visual acceptance test.
 
 **Stop if the owner does not accept the static publishing limitation.** Do not
 silently change the public website to runtime database rendering.
@@ -154,13 +154,12 @@ Use the exact names and do not add a 'NEXT_PUBLIC_' prefix to secrets.
 | 'SUPABASE_URL' | Supabase project API settings | Server configuration |
 | 'SUPABASE_ANON_KEY' | Supabase project API settings | Public key; RLS must protect data |
 | 'SUPABASE_SERVICE_ROLE_KEY' | Supabase project API settings | **Server-only secret** |
-| 'VERCEL_DEPLOY_HOOK_URL' | Deploy hook created in section 5 | **Secret URL; server-only** |
 | 'CRON_SECRET' | Generate a long, random secret | **Server-only secret** |
 
 Recommended environment scope:
 
-- Set all five for Production.
-- Set all five for Preview only if the owner wants the preview CMS connected
+- Set all four for Production.
+- Set all four for Preview only if the owner wants the preview CMS connected
   to the same REFI database. This means preview editors can affect the same
   content and should be an explicit decision.
 - Do not configure these for unrelated projects or environments.
