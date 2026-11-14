@@ -1,14 +1,14 @@
 # REFI CMS migration — architecture plan and decision record
 
-**Status:** implementation exists in draft PR #20; owner approval and production
-acceptance are still pending.
+**Status:** Option A implementation is in PR #35; full integration CI, owner
+acceptance and production configuration remain pending.
 
-**Implementation:** `feat/cms-zero-cost-supabase` (draft PR #20), with audit
-corrections stacked in draft PR #24.
+**Implementation:** `feat/supabase-cms-integration` (PR #35), based on the
+original CMS work in `feat/cms-zero-cost-supabase`.
 
 This document remains the architecture decision record. It records the original
-options and the current Option B implementation; it is not a claim that the
-migration is still planning-only or approved for production.
+options and the selected ISR implementation; it is not a claim that production
+provisioning or release has been approved.
 
 ---
 
@@ -134,11 +134,12 @@ slow/blocked publishing. But this must be an owner decision, because Option A
 trades architectural simplicity for publishing speed, and the site is currently
 commendably simple.
 
-The current draft implementation follows **Option B** to preserve the existing
-static public-site architecture. It deliberately accepts a rebuild after publishing
-and does not provide automatic future-time publishing. This choice must be confirmed
-by the owner before production integration. Option A remains a separate future
-architecture change, not something to mix into this migration.
+The consolidated implementation follows **Option A**. Public content reads use
+Next.js ISR with a one-hour cache and a shared `cms-content` tag. Publishing
+invalidates the tag and route cache, so affected pages regenerate on the next
+request without a full-site rebuild or deployment. New story and page slugs render
+on demand. Future-dated content appears on the next hourly refresh after its
+publish time; events are removed on the next hourly refresh after they start.
 
 ---
 
@@ -333,11 +334,14 @@ The owner has since set a binding constraint: **zero recurring cost**. No paid
 tools, subscriptions or services. That closes the cost question and the plan below
 reflects what was actually built.
 
-**Decided: Option B, Supabase Free, zero recurring cost.**
+**Decided: Option A (ISR), Supabase Free, zero recurring cost.**
 
-Option B delivers the client's real goal - publishing without touching GitHub -
-while leaving the working public site untouched. Option A can follow later if the
-client ever wants sub-minute publishing, and nothing built here blocks it.
+Option A delivers publishing without GitHub and without a full-site deployment for
+each update. It preserves cached, server-rendered pages for visitors, then refreshes
+them on demand after an authorised publish. Future-dated content is refreshed
+hourly rather than at an exact minute. Option B remains documented as the simpler
+deploy-hook alternative, but it was not selected because it violates requirement
+3.6's no-full-rebuild intent.
 
 The free tier's limits are real and are handled rather than ignored:
 
