@@ -95,7 +95,19 @@ credentials must be confirmed before any migration or environment change.
    no separate bucket to create.
 3. Create the editor's account under Authentication, then add that user's id to
    the `cms_admins` table so the account is recognised as an administrator.
-4. In Vercel, under Settings then Environment Variables, add:
+4. Before enabling the production read path, import the existing JSON content
+   into Supabase from a trusted local checkout. Set the project URL and service
+   role key only in the local shell (never commit them), then run:
+
+   ```bash
+   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:import
+   ```
+
+   Verify the imported collections in the Supabase Table Editor. Do this before
+   setting `SUPABASE_URL` and `SUPABASE_ANON_KEY` in Vercel: an empty CMS table
+   is treated as intentionally empty, not as a signal to use the JSON snapshot.
+
+5. In Vercel, under Settings then Environment Variables, add:
 
    | Variable | Where to find it | Notes |
    |---|---|---|
@@ -110,7 +122,7 @@ credentials must be confirmed before any migration or environment change.
    | `BREVO_SENDER_NAME` | Approved display name | Optional |
    | `PAYSTACK_SECRET_KEY` | Paystack API settings | **Server-only secret** |
    | `PAYSTACK_API_BASE` | Paystack API base URL | Optional; defaults to the official API endpoint |
-5. Redeploy. Then visit `/admin` and sign in.
+6. Redeploy. Then visit `/admin` and sign in.
 
 Current Vercel production environment inspection found only `NEXT_PUBLIC_SITE_URL`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No Supabase, Brevo, Paystack, deploy-hook or cron credentials are currently configured. The old GitHub OAuth values can be removed after the new CMS is accepted.
 
