@@ -2,16 +2,15 @@ import "server-only";
 
 // Loads content for the public site.
 //
-// Option B: the public site is statically generated, so content is read at BUILD
-// time. Publishing writes to Supabase and then triggers a deploy hook, which
-// rebuilds. The live site therefore never queries the database at runtime, and a
-// paused or unreachable Supabase project cannot affect visitors.
+// Option A: public pages use Next.js ISR. Supabase reads are cached for one hour
+// and tagged; an authorised publish invalidates the tag and route cache so the
+// next request regenerates the affected pages without a full website deployment.
+// The live site serves cached HTML between refreshes, not a database request per visitor.
 //
-// Build-time resilience: if Supabase is unreachable during a build, the loader
-// falls back to the JSON snapshot committed under `content/` rather than failing
-// the build. That snapshot is written by `npm run cms:snapshot` and is also what
-// a deployment with no backend configured uses, so local development and the
-// current static behaviour are unchanged.
+// Resilience: if Supabase is unreachable during a build or an ISR refresh, the
+// loader falls back to the JSON snapshot committed under `content/` rather than
+// failing a page request. The same snapshot powers local development and an
+// unconfigured deployment.
 
 import homeSnapshot from "../../../content/home.json";
 import storySnapshot from "../../../content/stories.json";
@@ -55,10 +54,9 @@ function snapshot(): ContentSource {
 /**
  * Fetches a collection from Supabase, falling back to the committed snapshot.
  *
- * The fallback is deliberate rather than a silent failure: it keeps the site
- * buildable when the free-tier project is paused or the network is unavailable,
- * which is the main reliability risk of a zero-cost backend. A warning is emitted
- * so the condition is visible in build logs.
+ * The fallback is deliberate rather than a silent failure: it keeps pages
+ * renderable when the free-tier project is paused or the network is unavailable.
+ * A warning is emitted so the condition is visible in server/build logs.
  */
 async function loadCollection(
   collection: string,
