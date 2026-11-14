@@ -4,6 +4,42 @@ import { recordDonation } from "@/lib/donations";
 
 export const runtime = "nodejs";
 
+const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
+
+async function readBoundedBody(request: Request): Promise<string | null> {
+  const declaredLength = Number(request.headers.get("content-length") || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_WEBHOOK_BODY_BYTES) return null;
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_WEBHOOK_BODY_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Paystack webhook receiver.
  *
@@ -17,12 +53,15 @@ export const runtime = "nodejs";
  *     full donation.
  *  3. Recording is idempotent on the reference, so a retried delivery does not
  *     count the same donation twice.
- *  4. A storage failure is reported as a failure. The endpoint still answers
- *     200 so Paystack does not retry a delivery that will not change, but it
- *     never claims a donation was recorded when it was not.
+ *  4. Transient verification or persistence failures return a retryable
+ *     response so Paystack can redeliver the event. Permanent invalid events
+ *     are acknowledged without recording a donation.
  */
 export async function POST(request: Request) {
-  const rawBody = await request.text();
+  const rawBody = await readBoundedBody(request);
+  if (rawBody === null) {
+    return NextResponse.json({ error: "Webhook payload is too large or invalid." }, { status: 413, headers: { "Cache-Control": "no-store" } });
+  }
   const signature = request.headers.get("x-paystack-signature");
 
   if (!(await isValidWebhookSignature(rawBody, signature))) {
@@ -49,7 +88,16 @@ export async function POST(request: Request) {
   // the amount against what was recorded when the payment was started.
   const verified = await verifyTransaction(reference);
   if (!verified.ok || verified.amountMinor === null) {
-    return NextResponse.json({ received: true, verified: false }, { headers: { "Cache-Control": "no-store" } });
+    if (verified.retryable) {
+      return NextResponse.json(
+        { received: false, verified: false, retryable: true, error: verified.error || "Payment verification is temporarily unavailable." },
+        { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } },
+      );
+    }
+    return NextResponse.json(
+      { received: true, verified: false, ignored: true },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const result = await recordDonation({
@@ -62,6 +110,20 @@ export async function POST(request: Request) {
     paidAt: verified.paidAt,
   });
 
+  if (!result.stored && !result.duplicate) {
+    return NextResponse.json(
+      {
+        received: false,
+        verified: true,
+        recorded: false,
+        persisted: result.persistence,
+        retryable: true,
+        error: result.error || "The donation could not be durably recorded.",
+      },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } },
+    );
+  }
+
   return NextResponse.json(
     {
       received: true,
@@ -70,7 +132,6 @@ export async function POST(request: Request) {
       recorded: result.stored,
       duplicate: result.duplicate,
       persisted: result.persistence,
-      error: result.error,
     },
     { headers: { "Cache-Control": "no-store" } },
   );
