@@ -54,7 +54,7 @@ First verify ownership and purpose with the client.
 1. Open the REFI project in Supabase.
 2. Open SQL Editor and create a new query.
 3. Copy the complete contents of
-   'supabase/migrations/0001_cms_schema.sql' from the reviewed implementation
+   'supabase/migrations/0003_cms_schema.sql' from the reviewed implementation
    branch.
 4. Run it once and confirm there are no SQL errors.
 5. Open Table Editor and confirm these tables exist:
