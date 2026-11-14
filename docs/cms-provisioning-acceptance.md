@@ -67,9 +67,12 @@ without the owner's confirmation.
 6. Open Storage and confirm a public bucket named 'media' exists.
 
 The migration creates the content table, admin allow-list, visibility function,
-row-level security policies and public media bucket. It is designed to be
-re-applied safely, but do not edit the SQL manually in the dashboard. Keep the
-versioned migration in Git as the source of truth.
+row-level security policies and public media bucket. The repository already uses
+migration version `0001` for donations and `0002` for game scores; CMS is therefore
+`0003`. Keep these version prefixes unique and never rename an already-applied
+migration. The CMS migration is designed to be re-applied safely, but do not edit
+the SQL manually in the dashboard. Keep the versioned migration in Git as the
+source of truth.
 
 ### Security expectations
 
