@@ -13,7 +13,7 @@ test("reads a valid JSON request within the byte ceiling", async () => {
 });
 
 test("rejects a body that exceeds the limit by UTF-8 bytes, not characters", async () => {
-  const body = JSON.stringify({ value: "é".repeat(80) });
+  const body = JSON.stringify({ value: "é".repeat(120) });
   assert.ok(body.length < 200);
   assert.ok(new TextEncoder().encode(body).byteLength > 200);
   const request = new Request("https://refi.test/api/cms", { method: "POST", body });
