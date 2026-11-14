@@ -1,6 +1,6 @@
 # AGENTS.md — REFI Foundation website
 
-Next.js 16 (App Router, React 19, TypeScript), deployed on Vercel.
+Next.js 16 (App Router, React 19, TypeScript), deployed on Vercel (production branch `main`; feature-branch previews are disabled; `staging` is the controlled preview lane).
 Canonical host: `https://www.refifoundation.com` (apex 308-redirects to `www`).
 
 ## Commands
@@ -11,6 +11,10 @@ npm run lint          # ESLint 9 flat config (next lint was removed in Next 16)
 npm run typecheck
 npm run build
 npm run verify:sitemap # builds with temp content, asserts against live server
+npm run test:cms      # publishing rules, validation, docs consistency (Node built-in runner)
+npm run test:rls      # row-level security against real PostgreSQL (needs Docker)
+npm run cms:snapshot  # full editorial backup + public-only snapshots (needs credentials)
+npm run cms:restore   # non-destructive restore from .cms-backups/cms-backup.json (needs credentials)
 npm audit
 ```
 
@@ -19,16 +23,19 @@ npm audit
 ## CI
 
 `.github/workflows/ci.yml` runs on every pull request and on pushes to `main`:
-install from the lockfile, lint, type check, build, then `verify:sitemap`. The
-job is named **`verify`**, so the status check to require in branch protection
-is `verify`.
+install from the lockfile, lint, type check, `test:cms`, `test:rls`, build, then
+`verify:sitemap`. The job is named **`verify`**, so the status check to require in
+branch protection is `verify`.
+
+`test:rls` runs on the GitHub runner, which has Docker, so the row-level security
+policies are genuinely exercised in CI rather than skipped.
 
 `scripts/verify-sitemap.mjs` builds with temporary content and asserts against
 the running server, so it exercises the real route rather than reimplementing
-the filter. It fails if a published story is missing, a scheduled story leaks
-in, or a URL is not the canonical origin, and it restores `content/stories.json`
-in a `finally` block. It binds to an OS-assigned free port so a stale server on
-a fixed port cannot be mistaken for the build under test.
+the filter. It fails if a published story or supporting CMS page is missing, if
+scheduled content leaks in, or if a URL is not the canonical origin. It restores
+both temporary content files in a `finally` block and binds to an OS-assigned free
+port so a stale server cannot be mistaken for the build under test.
 
 Branch protection is **not yet enabled** — applying it needs a token with the
 `administration` scope, which the agent's credential lacks (403 on both the
@@ -52,34 +59,80 @@ branch-protection and ruleset endpoints). This is an owner action.
   using `SiteHeader`/`SiteFooter` from `_components/site-chrome.tsx`. That
   caused the footer to drift between pages. Use the shared components.
 
-## CMS (Decap, Git-based)
+## CMS (Supabase + build-time content)
 
-Content is authored in Decap at `/admin`, which commits JSON into `content/` on
-`main`; Vercel then rebuilds and `src/lib/content.ts` reads that JSON at build
-time. The site stays fully static and needs no runtime content service.
+Content is authored at `/admin` (a first-party Next.js page) and stored in Supabase once the dedicated REFI project is provisioned; until then the public site uses committed JSON snapshots.
+`src/lib/content.ts` still reads content at build time: either from Supabase using
+the anon key, or from the committed JSON in `content/` when no backend is
+configured or the backend is unreachable. The public site therefore stays static
+and keeps working even if Supabase is paused or removed.
 
-- **Only the editor login needs credentials.** `GITHUB_CLIENT_ID` and
-  `GITHUB_CLIENT_SECRET` (server-only) are required for the OAuth routes. The
-  public site renders without them; `/api/cms/auth` returns 503 rather than
-  crashing when they are absent.
-- **The catch-all header rule must be listed first.** For a repeated header key
-  the last matching rule wins, and `/:path*` also matches `/admin`. Listing the
-  admin rule first silently applied the strict site CSP to `/admin` and broke
-  the CMS (verified).
-- **Decap needs `'unsafe-eval'`** in `script-src`: its config loader evaluates
-  the YAML through a JavaScript string, and without it the admin fails with
-  "Evaluating a string as JavaScript violates ... script-src". It is confined to
-  `/admin`, which is noindex and behind OAuth; the public CSP must not contain it.
-- **`/admin` must keep its trailing slash.** Decap resolves `config.yml`
-  relative to the document URL, so serving `/admin` (slash stripped by Next)
-  made it request `/config.yml` and 404. `public/admin/index.html` sets
-  `rel="cms-config-url"` and `next.config.ts` rewrites `/admin` to it.
-- **Editor-supplied image URLs use `<img>`, not `next/image`.** They can point
-  at any host, which `next/image` would reject against the remote allowlist at
-  build time.
-- **CMS Markdown is rendered by `react-markdown`**, which escapes raw HTML, so
-  CMS-authored content cannot inject markup. Verified: `<script>`, `onerror`
-  and `javascript:` URLs are all neutralised.
+Replaced the previous Decap/GitHub editor. `public/admin/` and the
+`/api/cms/auth` + `/api/cms/callback` OAuth routes were deleted along with it.
+
+- **The binding constraint is zero recurring cost.** No paid tools, subscriptions
+  or services. Supabase **Free** only. Do not add dependencies to solve a problem
+  that a few lines of `fetch` will solve; the PostgREST client in
+  `src/lib/cms/supabase.ts` is deliberately hand-rolled for this reason.
+- **Publishing rules live in one place: `src/lib/cms/visibility.ts`.** They are
+  pure functions with an injectable clock, unit tested in
+  `tests/visibility.test.ts`. `src/lib/content.ts` calls them rather than
+  reimplementing the rules inline, so the tested code is the code that runs. The
+  same rules are enforced in SQL by `public.is_content_visible()`.
+- **The SQL policies are the real security boundary**, not the TypeScript.
+  `supabase/tests/10_rls.sql` proves them against a real PostgreSQL instance via
+  `scripts/test-rls.sh` (needs Docker). The suite is verified to *fail* when a
+  policy is weakened, so a green run is meaningful.
+- **Unverified impact figures must never publish.** `verified` is not accepted from
+  the client at all; `validateContent` omits the field entirely so a crafted
+  request cannot set it, and the content route carries the stored value forward on
+  update. Do not "fix" this by accepting the field from the form.
+- **`script-src` on `/admin` must not contain `'unsafe-eval'`.** The old editor
+  needed it; the new one does not. Re-adding it would give away the security gain
+  from replacing the CMS. The admin CSP is scoped to `/admin` only.
+- **The catch-all header rule must be listed first.** For a repeated header key the
+  last matching rule wins, and `/:path*` also matches `/admin`. The admin rule must
+  come last in `next.config.ts`.
+- **`img-src` must include `https://*.supabase.co`.** CMS-uploaded images are
+  served from Supabase storage; without this the CSP blocks them on the public site
+  (silently, as a broken image).
+- **Editor-supplied image URLs use `<img>`, not `next/image`.** They can point at
+  any host, which `next/image` would reject against the remote allowlist at build
+  time.
+- **SVG uploads are rejected on purpose.** SVG can carry active content. Media is
+  served from the Supabase storage origin, not the REFI website origin; keeping the
+  upload allow-list to raster formats still reduces the risk of unsafe active files.
+  The upload route also checks file signatures rather than trusting MIME headers,
+  and caps files at 4 MB to stay below the serverless request-body limit.
+- **Markdown is rendered by `react-markdown`**, which escapes raw HTML, so
+  CMS-authored content cannot inject markup.
+- **Content destination links are validated server-side.** CTA and registration
+  links may be same-site paths or HTTPS URLs; script, data and protocol-relative
+  URLs are rejected.
+- **CMS secrets are server-only.** `config.ts`, `supabase.ts`, `auth.ts` and the
+  build-time content source import `server-only`; never move these modules into a
+  client component dependency graph.
+- **Saved content slugs are immutable in the editor.** Changing a slug is a
+  create-new-and-unpublish-old operation; do not re-enable in-place slug editing
+  without adding an atomic rename flow.
+- **The free tier pauses after 7 days idle.** A daily Vercel cron calls
+  `/api/cms/cron/keep-alive`, guarded by `CRON_SECRET`. Free tier also has no
+  automatic backups: `npm run cms:snapshot` writes content into `content/` as the
+  recovery path. Both limits are documented in `docs/owner-handover.md`.
+- **Environment variable names are checked by a test.** `tests/docs-consistency.test.ts`
+  fails if `docs/owner-handover.md` names a variable the code does not read, or the
+  code reads one the doc does not document. This caught a real
+  `CMS_DEPLOY_HOOK_URL` vs `VERCEL_DEPLOY_HOOK_URL` mismatch.
+
+### Testing without adding a framework
+
+`npm run test:cms` uses Node 24's built-in test runner with native TypeScript
+support, so no test framework is installed. Node requires explicit file extensions
+on relative imports in this mode, which is why `tsconfig.json` sets
+`allowImportingTsExtensions`. Tests target pure modules with no runtime relative
+dependencies and no JSON imports; importing the full `src/lib/content.ts` loader
+would pull in the app's extensionless imports, which plain Node cannot resolve
+outside the Next.js bundler.
 
 ## Verification expectations
 
@@ -87,57 +140,6 @@ Build success is not sufficient evidence. After any user-visible change,
 confirm the **deployed** site: fetch the live URL, check the rendered HTML and
 response headers, and load it in a browser to confirm hydration and client-side
 navigation still work.
-
-## Free-only technology policy
-
-REFI must remain operable on free tiers and open-source software. Do not add
-paid subscriptions, paid APIs, premium hosting features, or dependencies that
-require a licence fee. Do not silently upgrade any provider plan. If a free
-quota is exhausted, show an honest unavailable/stale state and resume when the
-quota resets; never trigger paid usage to keep a feature online.
-
-- API-Football is permitted only on its **$0 Free plan** (currently 100
-  requests/day, no payment card required, and the provider says requests stop
-  when the quota is reached rather than generating overage charges). Do not
-  upgrade it. The live feed must tolerate quota exhaustion.
-- Hosting, database, CI, email and analytics must remain within free allowances.
-  Reassess the current provider's published limits before enabling any service.
-- Paystack is a payment processor, not a subscription dependency: transaction
-  fees apply only when a donor chooses to make a payment. Do not add paid
-  recurring services around donations.
-- Prefer existing platform capabilities and browser-native code over new
-  packages. Every proposed dependency must be open-source and free to use.
-
-## Live football feed (PR #22 branch)
-
-`/matches` renders a live-score feed backed by API-Football. The provider's free
-tier is metered per day, so the feed is built around not spending requests
-carelessly. Do not undo any of the following:
-
-- **No short `revalidate` on the route.** `revalidate = 30` is 2,880 requests a
-  day on its own, which exhausts a free-tier allowance within the first hour of
-  a match day. The upstream call is cached for `REFRESH_SECONDS` (120) in
-  `src/lib/football/live.ts`, and the route response is cacheable for the same
-  window, so many visitors and repeated polls share one provider request.
-- **The daily ceiling comes from the provider, not a guess.** `live.ts` reads
-  `x-ratelimit-requests-limit` / `-current` from the provider's response headers
-  and applies a 0.9 safety margin. Do not replace this with a hardcoded number:
-  the real limit depends on the account plan, which is an owner-side fact.
-  `LIVE_SCORE_DAILY_BUDGET` overrides it when an operator sets it explicitly,
-  and takes precedence over the reported value.
-- **Single-flight is load-bearing.** `fetchLiveMatches()` shares one in-flight
-  promise, so concurrent cache misses collapse into one upstream call. Removing
-  it lets a traffic burst stampede the provider.
-- **There are no automatic retries.** A failure must not spend more of the
-  remaining allowance. A `429` is treated as definitive and marks the rest of
-  the day as spent instead of probing again.
-- **The client poll interval is not the cost driver.** Polling re-reads a cached
-  feed, so `POLL_MS` can stay short without costing provider requests. Polling
-  also pauses while the tab is hidden.
-- **Test with `npm run verify:live-feed`, never the real provider.**
-  `FOOTBALL_API_BASE` points the feed at a local mock, and
-  `FOOTBALL_REFRESH_SECONDS` lowers the cache window so the budget guard can be
-  exercised deterministically. Both exist for testing only.
 
 ## Vercel
 
@@ -150,25 +152,9 @@ ask the owner for a bypass secret. The owner must change environment variables
 
 - **Logo**: the original asset is not in the repository. Do not recreate or
   substitute it. Work is blocked until the client supplies the file.
-- **Match Centre** is implemented at `/matches` using API-Football. Keep the
-  provider cache, single-flight request guard, provider-derived daily budget,
-  no-retry-on-quota behavior and mock-based `npm run verify:live-feed` test.
-- **Play for Impact** lives at `/play`; each game is served by `/play/[game]`.
-  The game catalog is the single source of truth. A score is not a donation,
-  reward or prize. Browser-reported scores are not authoritative and must not
-  be published to a leaderboard until a server-issued session can validate them.
-- **Payments must be verified server-side.** Never trust a success URL or event
-  body as proof of payment. Verify amount and currency with Paystack, validate
-  the raw-body webhook signature, re-verify the transaction, and use the unique
-  payment reference for idempotency. Storage failure must never be reported as
-  a recorded donation. Run `npm run verify:donations` and
-  `npm run verify:games` against their local mocks.
-- **Donation storage migration** (`supabase/migrations/0001_donations.sql`)
-  is version-controlled but not automatically applied. Until an owner applies
-  it and supplies the required Paystack/Supabase server credentials, donation
-  totals remain unavailable; do not invent totals or claim successful storage.
-- **Game score migration** is also not applied. Do not enable public score
-  persistence without server-issued session validation.
+- **Sports match centre** (`feat/cms-live-match-foundation`): deferred.
+- **Contact form and donations** (`/donate` is a static page): blocked on
+  credentials (Brevo, Paystack). Do not ship forms that cannot deliver.
 - **The mobile navigation is the only route to interior pages below 800px**;
   `.refi-nav-links` is hidden there. Do not remove `MobileNavigation` from
   `SiteHeader` without replacing it.
