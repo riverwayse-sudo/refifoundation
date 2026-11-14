@@ -3,6 +3,8 @@ import { siteUrl } from "@/lib/site";
 import { getPublishedPages, getPublishedStories } from "@/lib/content";
 import { GAMES } from "@/lib/games/catalog";
 
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteUrl;
   const [stories, pages] = await Promise.all([getPublishedStories(), getPublishedPages()]);
