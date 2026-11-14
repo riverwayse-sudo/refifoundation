@@ -37,6 +37,9 @@ jobs:
       - name: Verify contact endpoint
         run: npm run verify:contact
 
+      - name: Verify shared navigation
+        run: node --experimental-strip-types --test scripts/verify-navigation.mjs
+
       - name: Build
         run: npm run build
 
