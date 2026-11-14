@@ -121,9 +121,13 @@ credentials must be confirmed before any migration or environment change.
    | `BREVO_SENDER_NAME` | Approved display name | Optional |
    | `PAYSTACK_SECRET_KEY` | Paystack API settings | **Server-only secret** |
    | `PAYSTACK_API_BASE` | Paystack API base URL | Optional; defaults to the official API endpoint |
+   | `API_FOOTBALL_KEY` | API-Football dashboard | **Server-only secret** required for live scores |
+   | `FOOTBALL_API_BASE` | API-Football API endpoint | Optional; defaults to `https://v3.football.api-sports.io` |
+   | `FOOTBALL_REFRESH_SECONDS` | Operator setting | Optional; defaults to 120 seconds; do not lower without checking quota |
+   | `LIVE_SCORE_DAILY_BUDGET` | Operator setting | Optional; defaults to a conservative 90-request ceiling |
 6. Redeploy. Then visit `/admin` and sign in.
 
-Current Vercel production environment inspection found only `NEXT_PUBLIC_SITE_URL`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No Supabase, Brevo, Paystack or cron credentials are currently configured. The old GitHub OAuth values can be removed after the new CMS is accepted.
+Current Vercel production environment inspection found only `NEXT_PUBLIC_SITE_URL`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No Supabase, Brevo, Paystack, API-Football or cron credentials are currently configured. The old GitHub OAuth values can be removed after the new CMS is accepted.
 
 Both `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` must be **server-only**. Do not
 prefix them with `NEXT_PUBLIC_`; that would publish the secret to the browser.
