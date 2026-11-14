@@ -1,8 +1,8 @@
-import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/cms/auth";
 import { serviceRequest } from "@/lib/cms/supabase";
 import { readJsonBody } from "@/lib/cms/request-body";
+import { revalidateCmsContent } from "@/lib/cms/revalidation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,9 +79,7 @@ export async function POST(request: Request) {
   // Invalidate both the tagged Supabase data and the route cache. The next request
   // regenerates affected pages without a full deployment. Revalidating the root
   // layout covers homepage, stories, projects, events and custom CMS pages.
-  revalidateTag("cms-content", { expire: 0 });
-  revalidatePath("/", "layout");
-  revalidatePath("/sitemap.xml");
+  revalidateCmsContent();
 
   const isScheduled = Date.parse(publishedAt) > Date.now();
   const refresh = {
