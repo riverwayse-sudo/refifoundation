@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/cms/auth";
 import { contentCollections, type ContentCollection } from "@/lib/cms/config";
 import { serviceRequest } from "@/lib/cms/supabase";
+import { readJsonBody } from "@/lib/cms/request-body";
 import { normaliseSlug, isValidSlug, validateContent } from "@/lib/cms/validation";
 
 export const runtime = "nodejs";
@@ -52,12 +53,11 @@ export async function POST(request: Request) {
   const admin = await requireAdmin();
   if (!admin) return unauthorised();
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  const parsed = await readJsonBody(request, 128 * 1024);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status, headers: { "Cache-Control": "no-store" } });
   }
+  const body = parsed.value;
 
   const { collection, slug, data, published, publishAt } = (body ?? {}) as {
     collection?: unknown;
