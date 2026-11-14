@@ -17,7 +17,7 @@ const contentSecurityPolicy = [
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: https://images.pexels.com",
+  "img-src 'self' data: https://images.pexels.com https://*.supabase.co",
   "connect-src 'self'",
   "manifest-src 'self'",
   "upgrade-insecure-requests",
@@ -32,27 +32,25 @@ const securityHeaders = [
   ...(isProduction ? [{ key: "Content-Security-Policy", value: contentSecurityPolicy }] : []),
 ];
 
-// The CMS admin at /admin loads Decap from a CDN and talks to the GitHub API
-// directly from the browser, so it needs a wider policy than the public site.
-// It is scoped to /admin only; everything else keeps the strict policy.
+// The content manager at /admin is a first-party page. It needs a slightly wider
+// policy than the public site because it talks to the Supabase API and shows
+// images hosted in the Supabase storage bucket. It deliberately does NOT need
+// 'unsafe-eval' or a CDN allowance: the previous editor was a third-party bundle
+// loaded from a CDN, and this one is compiled into the application. Keeping
+// 'unsafe-eval' out is the point of replacing it.
 //
-// 'unsafe-eval' is required because Decap's config loader evaluates the YAML
-// through a JavaScript string (verified: without it the admin fails with
-// "Evaluating a string as JavaScript violates ... script-src"). This weakens
-// script protection on that route, which is why it is confined to /admin, which
-// is noindex and requires a GitHub OAuth session. It is not applied anywhere on
-// the public site.
+// Scoped to /admin only; the public site keeps the strict policy above.
 const adminContentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://avatars.githubusercontent.com https://raw.githubusercontent.com",
+  "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.github.com",
+  "connect-src 'self' https://*.supabase.co",
   "manifest-src 'self'",
 ].join("; ");
 
@@ -77,16 +75,6 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: securityHeaders },
       { source: "/admin/:path*", headers: adminHeaders },
       { source: "/admin", headers: adminHeaders },
-    ];
-  },
-  async rewrites() {
-    // The CMS admin is a static file at public/admin/index.html. Next strips the
-    // trailing slash, so "/admin" would 404. Decap also resolves config.yml
-    // relative to the document URL, so the trailing-slash form must be preserved
-    // (serving "/admin" would make it look for "/config.yml").
-    return [
-      { source: "/admin/", destination: "/admin/index.html" },
-      { source: "/admin", destination: "/admin/index.html" },
     ];
   },
 };
