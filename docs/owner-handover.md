@@ -14,7 +14,7 @@ something is unverified or blocked, it says so.
 
 ## 1. What is live now
 
-All of these return `200` on production:
+The following routes are on the current production release and were previously verified to return `200`:
 
 | Page | URL | Status |
 |---|---|---|
@@ -32,6 +32,8 @@ The public site is statically generated. It reads Supabase at build time when th
 
 Everything here runs at **zero recurring cost**. No paid tools, subscriptions or
 services are used, and none are required.
+
+The additional Contact, Match Centre, Play for Impact and CMS routes are in the integration branch and are **not live on production yet**.
 
 ## 2. What is deliberately not live
 
@@ -98,23 +100,16 @@ credentials must be confirmed before any migration or environment change.
    | Variable | Where to find it | Notes |
    |---|---|---|
    | `SUPABASE_URL` | Supabase, Project Settings, API | |
-   | `SUPABASE_ANON_KEY` | Supabase, Project Settings, API | Public by design; safe to expose |
+   | `SUPABASE_ANON_KEY` | Supabase, Project Settings, API | Public by design; RLS must protect data |
    | `SUPABASE_SERVICE_ROLE_KEY` | Supabase, Project Settings, API | **Server only.** Never prefix with `NEXT_PUBLIC_` |
    | `VERCEL_DEPLOY_HOOK_URL` | Vercel, Settings, Git, Deploy Hooks | Create a hook for the `main` branch |
-   | `CRON_SECRET` | Any long random string | Protects the keep-alive endpoint |
-    | `BREVO_API_KEY` | Brevo API settings | **Server-only secret** for contact delivery |
-    | `REFI_CONTACT_EMAIL` | Confirmed Foundation inbox | Contact enquiry recipient |
-    | `BREVO_SENDER_EMAIL` | Verified sender in Brevo | Must be authorised in Brevo |
-    | `BREVO_SENDER_NAME` | Approved display name | Optional |
-    | `PAYSTACK_SECRET_KEY` | Paystack API settings | **Server-only secret** |
-    | `PAYSTACK_API_BASE` | Paystack API base URL | Optional; defaults to official API endpoint |
-| `BREVO_API_KEY` | Brevo API settings | **Server-only secret** for contact delivery |
-| `REFI_CONTACT_EMAIL` | Confirmed Foundation inbox | Contact enquiry recipient |
-| `BREVO_SENDER_EMAIL` | Verified sender in Brevo | Must be authorised in Brevo |
-| `BREVO_SENDER_NAME` | Approved display name | Optional |
-| `PAYSTACK_SECRET_KEY` | Paystack API settings | **Server-only secret** |
-| `PAYSTACK_API_BASE` | Paystack API base URL | Optional; defaults to the official API endpoint |
-
+   | `CRON_SECRET` | Generate a long random secret | Protects the keep-alive endpoint |
+   | `BREVO_API_KEY` | Brevo API settings | **Server-only secret** for contact delivery |
+   | `REFI_CONTACT_EMAIL` | Confirmed Foundation inbox | Contact enquiry recipient |
+   | `BREVO_SENDER_EMAIL` | Verified sender in Brevo | Must be authorised in Brevo |
+   | `BREVO_SENDER_NAME` | Approved display name | Optional |
+   | `PAYSTACK_SECRET_KEY` | Paystack API settings | **Server-only secret** |
+   | `PAYSTACK_API_BASE` | Paystack API base URL | Optional; defaults to the official API endpoint |
 5. Redeploy. Then visit `/admin` and sign in.
 
 Current Vercel production environment inspection found only `NEXT_PUBLIC_SITE_URL`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No Supabase, Brevo, Paystack, deploy-hook or cron credentials are currently configured. The old GitHub OAuth values can be removed after the new CMS is accepted.
