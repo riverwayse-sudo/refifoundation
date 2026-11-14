@@ -127,37 +127,7 @@ A successful request to this hook means a deployment was requested. It does not
 prove that the deployment completed or that the public pages were visually
 checked.
 
-## 6. Configure Vercel environment variables
-
-In Vercel → Project → Settings → Environment Variables, add the following.
-Use the exact names and do not add a 'NEXT_PUBLIC_' prefix to secrets.
-
-| Variable | Value source | Exposure |
-|---|---|---|
-| 'SUPABASE_URL' | Supabase project API settings | Server configuration |
-| 'SUPABASE_ANON_KEY' | Supabase project API settings | Public key; RLS must protect data |
-| 'SUPABASE_SERVICE_ROLE_KEY' | Supabase project API settings | **Server-only secret** |
-| 'VERCEL_DEPLOY_HOOK_URL' | Deploy hook created in section 5 | **Secret URL; server-only** |
-| 'CRON_SECRET' | Generate a long, random secret | **Server-only secret** |
-
-Recommended environment scope:
-
-- Set all five for Production.
-- Set all five for Preview only if the owner wants the preview CMS connected
-  to the same REFI database. This means preview editors can affect the same
-  content and should be an explicit decision.
-- Do not configure these for unrelated projects or environments.
-- Local development should use a private, ignored '.env.local' file. Never commit
-  it or paste its values into a support conversation.
-
-For 'CRON_SECRET', generate a unique random value using an approved password
-manager or secrets generator. Do not use a memorable word, project name, or
-reused password.
-
-After saving variables, trigger a fresh deployment. Environment variable changes
-do not retroactively update an already-built deployment.
-
-## 7. Import the existing JSON content
+## 6. Import the existing JSON content
 
 Do this once the migration is applied and the server-side project URL and
 service-role key are available in a secure local environment.
@@ -189,6 +159,36 @@ the impact and approved the overwrite.
 
 The current import includes the homepage and records from stories, projects,
 events, impact metrics and pages. Empty JSON collections simply import zero rows.
+
+## 7. Configure Vercel environment variables
+
+In Vercel → Project → Settings → Environment Variables, add the following.
+Use the exact names and do not add a 'NEXT_PUBLIC_' prefix to secrets.
+
+| Variable | Value source | Exposure |
+|---|---|---|
+| 'SUPABASE_URL' | Supabase project API settings | Server configuration |
+| 'SUPABASE_ANON_KEY' | Supabase project API settings | Public key; RLS must protect data |
+| 'SUPABASE_SERVICE_ROLE_KEY' | Supabase project API settings | **Server-only secret** |
+| 'VERCEL_DEPLOY_HOOK_URL' | Deploy hook created in section 5 | **Secret URL; server-only** |
+| 'CRON_SECRET' | Generate a long, random secret | **Server-only secret** |
+
+Recommended environment scope:
+
+- Set all five for Production.
+- Set all five for Preview only if the owner wants the preview CMS connected
+  to the same REFI database. This means preview editors can affect the same
+  content and should be an explicit decision.
+- Do not configure these for unrelated projects or environments.
+- Local development should use a private, ignored '.env.local' file. Never commit
+  it or paste its values into a support conversation.
+
+For 'CRON_SECRET', generate a unique random value using an approved password
+manager or secrets generator. Do not use a memorable word, project name, or
+reused password.
+
+After saving variables, trigger a fresh deployment. Environment variable changes
+do not retroactively update an already-built deployment.
 
 ## 8. First sign-in and functional acceptance
 
@@ -328,7 +328,7 @@ The restore command upserts every row in the backup but does not delete rows cre
 If the CMS dashboard fails but the public site is healthy:
 
 1. Do not delete the Supabase project or its data.
-2. Check Vercel deployment logs and the five environment variables.
+2. Check Vercel deployment logs and the required environment variables.
 3. Check Supabase project status and authentication logs.
 4. Keep the public site running from its last successful static deployment or
    committed JSON fallback while the CMS issue is investigated.
@@ -371,4 +371,4 @@ Record the tester, date, deployment URL/commit and evidence for each completed
 item. A green CI run or a Ready Vercel deployment is not a substitute for these
 checks.
 
-**Current state:** CMS provisioning and production acceptance have not been verified from this repository. Confirm the dedicated REFI Supabase project reference and ownership directly in the approved Supabase account before applying migrations or changing hosting configuration. Do not infer that a project does not exist merely because it is not visible through a connected account. Credentials, administrator access, hosting environment variables and end-to-end production acceptance remain unverified here. Keep PR #20 unmerged until the required review and owner acceptance are complete. PR #24 has already been squash-merged into the PR #20 feature branch; it is not a separate production change.
+**Current state:** CMS provisioning and production acceptance have not been verified from this repository. Confirm the dedicated REFI Supabase project reference and ownership directly in the approved Supabase account before applying migrations or changing hosting configuration. Do not infer that a project does not exist merely because it is not visible through a connected account. Credentials, administrator access, hosting environment variables and end-to-end production acceptance remain unverified here. Keep the CMS integration branch out of `main` until the required review, project verification and owner acceptance are complete. No production deployment is authorised by this runbook.
