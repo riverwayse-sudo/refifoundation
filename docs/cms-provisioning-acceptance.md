@@ -4,7 +4,7 @@
 project has been created, connected, or accepted.
 
 **Related implementation:** `feat/supabase-cms-integration`. The CMS code is integrated into the consolidated feature branch; production provisioning remains pending.
-**Architecture:** Option B — Supabase-backed editor, static Next.js public site,
+**Architecture:** Option A — Supabase-backed editor, ISR-cached Next.js public site,
 JSON snapshot fallback, and on-demand ISR cache invalidation after publishing.
 
 Use this runbook only for a dedicated REFI Foundation Supabase project. Do not
