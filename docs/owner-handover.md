@@ -315,9 +315,10 @@ This does not govern editorial publishing through `/admin`: content is stored in
 
 ### Initial content import
 
-After confirming or creating the dedicated REFI Supabase project, applying
-`supabase/migrations/0003_cms_schema.sql`, and setting the server-side
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` values locally, run:
+After confirming the dedicated REFI Supabase project and applying
+`supabase/migrations/0003_cms_schema.sql`, import the existing JSON content
+before enabling the production `SUPABASE_URL` and `SUPABASE_ANON_KEY` settings.
+Set the service-role key only in a trusted local shell, then run:
 
 ```bash
 npm run cms:import
