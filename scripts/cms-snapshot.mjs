@@ -57,7 +57,7 @@ function toSnapshotRecord(row) {
     ...row.data,
     slug: row.slug,
     published: row.published === true,
-    publishedAt: row.data.publishedAt || row.published_at || undefined,
+    publishedAt: row.published_at || row.data.publishedAt || undefined,
   };
 }
 
