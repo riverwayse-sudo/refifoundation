@@ -5,6 +5,8 @@ import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 import { refiImages } from "@/lib/media";
 import { getPublishedStories } from "@/lib/content";
 
+export const revalidate = 3600;
+
 export const metadata = {
   title: "Stories & news",
   description: "Stories, updates and community voices from REFI Foundation.",

@@ -4,6 +4,8 @@ import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 import { refiImages } from "@/lib/media";
 import { getPublishedPage, getVerifiedImpactMetrics } from "@/lib/content";
 
+export const revalidate = 3600;
+
 export async function generateMetadata() {
   const page = await getPublishedPage("impact");
   return { title: page?.seoTitle || page?.title || "Impact & Accountability", description: page?.seoDescription || page?.summary || "Verified impact reporting and accountability from REFI Foundation." };

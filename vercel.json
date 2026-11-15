@@ -8,5 +8,11 @@
       "main": true,
       "staging": true
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cms/cron/keep-alive",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }
