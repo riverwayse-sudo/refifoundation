@@ -4,7 +4,7 @@ import { contentCollections, type ContentCollection } from "@/lib/cms/config";
 import { serviceRequest } from "@/lib/cms/supabase";
 import { readJsonBody } from "@/lib/cms/request-body";
 import { revalidateCmsContent } from "@/lib/cms/revalidation";
-import { normaliseSlug, isValidSlug, validateContent } from "@/lib/cms/validation";
+import { normaliseSlug, isValidSlug, validateContent, shouldPreserveMetricVerification } from "@/lib/cms/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,7 +103,11 @@ export async function POST(request: Request) {
 
   // Verification is not settable through this route, so an update must carry the
   // existing value forward rather than dropping it.
-  if (collection === "impact_metrics" && previous?.data?.verified === true) {
+  if (
+    collection === "impact_metrics" &&
+    previous?.data &&
+    shouldPreserveMetricVerification(previous.data, validated.value)
+  ) {
     validated.value.verified = true;
   }
 
