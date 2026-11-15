@@ -252,3 +252,14 @@ test("event registration links reject unsafe protocols", () => {
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.errors.join(" "), /Registration link must be/);
 });
+
+
+test("metric verification is preserved only while the reviewed claim is unchanged", async () => {
+  const { shouldPreserveMetricVerification } = await import("../src/lib/cms/validation.ts");
+  const previous = { label: "Children reached", value: "1,200", context: "As of 2026", verified: true };
+  assert.equal(shouldPreserveMetricVerification(previous, { label: "Children reached", value: "1,200", context: "As of 2026" }), true);
+  assert.equal(shouldPreserveMetricVerification(previous, { label: "Children reached", value: "1,300", context: "As of 2026" }), false);
+  assert.equal(shouldPreserveMetricVerification(previous, { label: "Young people reached", value: "1,200", context: "As of 2026" }), false);
+  assert.equal(shouldPreserveMetricVerification(previous, { label: "Children reached", value: "1,200", context: "Updated basis" }), false);
+  assert.equal(shouldPreserveMetricVerification({ ...previous, verified: false }, { label: "Children reached", value: "1,200", context: "As of 2026" }), false);
+});
