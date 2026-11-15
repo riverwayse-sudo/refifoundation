@@ -285,3 +285,18 @@ export function isFutureDate(value: unknown): boolean {
 }
 
 export { CATEGORIES, FOCUS_AREAS, PROJECT_STATUSES, EVENT_STATUSES };
+
+/**
+ * A metric's verification applies only to the exact claim that was reviewed.
+ * If its label, value, or explanatory context changes, the old verification
+ * must be revoked and the metric hidden until it is reviewed again.
+ */
+export function shouldPreserveMetricVerification(
+  previous: Record<string, unknown>,
+  next: Record<string, unknown>,
+): boolean {
+  return previous.verified === true &&
+    previous.label === next.label &&
+    previous.value === next.value &&
+    (previous.context ?? "") === (next.context ?? "");
+}
