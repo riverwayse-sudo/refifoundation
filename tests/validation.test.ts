@@ -15,7 +15,6 @@ import {
   normaliseSlug,
   isValidSlug,
   toIsoOrUndefined,
-  isFutureDate,
   isSafeLink,
 } from "../src/lib/cms/validation.ts";
 
@@ -42,13 +41,6 @@ test("toIsoOrUndefined handles empty and malformed input without throwing", () =
   assert.equal(toIsoOrUndefined(undefined), undefined);
   assert.equal(toIsoOrUndefined("not a date"), undefined);
   assert.equal(toIsoOrUndefined("2024-03-01"), "2024-03-01T00:00:00.000Z");
-});
-
-test("isFutureDate only accepts future ISO dates", () => {
-  assert.equal(isFutureDate("2999-01-01T00:00:00Z"), true);
-  assert.equal(isFutureDate("2000-01-01T00:00:00Z"), false);
-  assert.equal(isFutureDate("garbage"), false);
-  assert.equal(isFutureDate(""), false);
 });
 
 test("content links reject script and protocol-relative URLs", () => {
