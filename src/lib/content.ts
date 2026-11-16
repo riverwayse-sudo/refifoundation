@@ -165,7 +165,7 @@ export type VerifiedImpactMetric = {
 export async function getVerifiedImpactMetrics(): Promise<VerifiedImpactMetric[]> {
   const source = await loadContentSource();
   return source.metrics
-    .map((item) => ({
+    .map((item, index) => ({
       id: text(item.label),
       label: text(item.label),
       value: text(item.value),
