@@ -23,15 +23,6 @@ import { isContentBackendConfigured, supabaseAnonKey, type ContentCollection } f
 import { readVisibleContent } from "./supabase";
 import { rowsToContentRecords } from "./rows";
 
-export type ContentSource = {
-  home: Record<string, unknown>;
-  stories: Record<string, unknown>[];
-  projects: Record<string, unknown>[];
-  events: Record<string, unknown>[];
-  metrics: Record<string, unknown>[];
-  pages: Record<string, unknown>[];
-};
-
 function snapshot(): ContentSource {
   const list = (value: unknown, key: string): Record<string, unknown>[] => {
     if (!value || typeof value !== "object") return [];
