@@ -19,7 +19,7 @@ import eventSnapshot from "../../../content/events.json";
 import metricSnapshot from "../../../content/impact-metrics.json";
 import pageSnapshot from "../../../content/pages.json";
 
-import { isContentBackendConfigured, supabaseAnonKey } from "./config";
+import { isContentBackendConfigured, supabaseAnonKey, type ContentCollection } from "./config";
 import { readVisibleContent } from "./supabase";
 import { rowsToContentRecords } from "./rows";
 
@@ -77,28 +77,19 @@ async function loadCollection(
   return rowsToContentRecords(result.data);
 }
 
-export async function loadContentSource(): Promise<ContentSource> {
+/** Loads one public collection, preserving its committed JSON fallback. */
+export async function loadContentCollection(
+  collection: Exclude<ContentCollection, "home">,
+): Promise<Record<string, unknown>[]> {
   const base = snapshot();
+  const snapshotKey = collection === "impact_metrics" ? "metrics" : collection;
+  return loadCollection(collection, base[snapshotKey]);
+}
 
-  if (!isContentBackendConfigured) return base;
-
-  const [stories, projects, events, metrics, pages, homeRows] = await Promise.all([
-    loadCollection("stories", base.stories),
-    loadCollection("projects", base.projects),
-    loadCollection("events", base.events),
-    loadCollection("impact_metrics", base.metrics),
-    loadCollection("pages", base.pages),
-    loadCollection("home", []),
-  ]);
-
-  return {
-    // Home is a singleton. If the table has no home row yet, keep the snapshot so
-    // the homepage never renders empty.
-    home: homeRows[0] ?? base.home,
-    stories,
-    projects,
-    events,
-    metrics,
-    pages,
-  };
+/** Home is a singleton; an absent or unavailable database row keeps the snapshot. */
+export async function loadHomeSettings(): Promise<Record<string, unknown>> {
+  const base = snapshot();
+  if (!isContentBackendConfigured) return base.home;
+  const rows = await loadCollection("home", []);
+  return rows[0] ?? base.home;
 }
