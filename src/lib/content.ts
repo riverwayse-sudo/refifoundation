@@ -1,4 +1,4 @@
-import { loadContentSource } from "./cms/content-source";
+import { loadContentCollection, loadHomeSettings } from "./cms/content-source";
 import {
   isPublishedStory,
   isVisiblePage,
@@ -31,8 +31,8 @@ export type PublishedStory = {
 };
 
 export async function getPublishedStories(): Promise<PublishedStory[]> {
-  const source = await loadContentSource();
-  return source.stories
+  const items = await loadContentCollection("stories");
+  return items
     .map((item) => ({
       id: text(item.slug),
       title: text(item.title),
@@ -64,8 +64,8 @@ export type PublishedPage = {
 };
 
 export async function getPublishedPage(slug: string): Promise<PublishedPage | null> {
-  const source = await loadContentSource();
-  const item = source.pages.find(
+  const items = await loadContentCollection("pages");
+  const item = items.find(
     (page) => text(page.slug) === slug && isVisiblePage(page),
   );
   if (!item) return null;
@@ -82,8 +82,8 @@ export async function getPublishedPage(slug: string): Promise<PublishedPage | nu
 
 /** Returns every page eligible for static generation and sitemap inclusion. */
 export async function getPublishedPages(): Promise<PublishedPage[]> {
-  const source = await loadContentSource();
-  return source.pages
+  const items = await loadContentCollection("pages");
+  return items
     // /our-work is the existing public route; do not emit a duplicate /pages/our-work URL.
     .filter((item) => text(item.slug) !== "our-work" && isVisiblePage(item))
     .map((item) => ({
@@ -108,8 +108,8 @@ export type PublishedProject = {
 };
 
 export async function getPublishedProjects(): Promise<PublishedProject[]> {
-  const source = await loadContentSource();
-  return source.projects
+  const items = await loadContentCollection("projects");
+  return items
     .map((item) => ({
       id: text(item.slug),
       title: text(item.title),
@@ -136,8 +136,8 @@ export type PublishedEvent = {
 };
 
 export async function getPublishedEvents(): Promise<PublishedEvent[]> {
-  const source = await loadContentSource();
-  return source.events
+  const items = await loadContentCollection("events");
+  return items
     .map((item) => ({
       id: text(item.slug),
       title: text(item.title),
@@ -163,8 +163,8 @@ export type VerifiedImpactMetric = {
 };
 
 export async function getVerifiedImpactMetrics(): Promise<VerifiedImpactMetric[]> {
-  const source = await loadContentSource();
-  return source.metrics
+  const items = await loadContentCollection("impact_metrics");
+  return items
     .map((item, index) => ({
       id: text(item.label),
       label: text(item.label),
@@ -192,6 +192,5 @@ export type HomeSettings = {
 };
 
 export async function getHomeSettings(): Promise<HomeSettings | null> {
-  const source = await loadContentSource();
-  return source.home as HomeSettings;
+  return (await loadHomeSettings()) as HomeSettings;
 }
