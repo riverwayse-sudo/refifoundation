@@ -278,12 +278,6 @@ export function validateContent(
   }
 }
 
-/** True when a valid ISO date is in the future. */
-export function isFutureDate(value: unknown): boolean {
-  const iso = toIsoOrUndefined(value);
-  return Boolean(iso && Date.parse(iso) > Date.now());
-}
-
 export { CATEGORIES, FOCUS_AREAS, PROJECT_STATUSES, EVENT_STATUSES };
 
 /**
