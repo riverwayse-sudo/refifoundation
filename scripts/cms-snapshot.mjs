@@ -13,7 +13,7 @@
  * Usage: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { isPublishedStory, isVisiblePage, isPublishedEvent, isVerifiedMetric, isPublishedProject } from "../src/lib/cms/visibility.ts";
 
