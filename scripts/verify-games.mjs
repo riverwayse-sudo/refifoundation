@@ -104,7 +104,7 @@ async function verifyRules() {
   const { pickQuestions, quizScore, quizPercent, QUIZ_QUESTIONS, QUIZ_LENGTH } = await import(mod("brain-battle"));
   const { dropBlock, initialBlock, overlap, stackScore, STACK_MIN_WIDTH } = await import(mod("stack-it"));
   const { resolvePenalty, penaltyScore, keeperDive, PENALTY_TAKERS } = await import(mod("penalty"));
-  const { validateScoreSubmission, validateDisplayName, sanitiseDisplayName, allowRequest, MAX_SCORE_BODY_BYTES } = await import(mod("scores"));
+  const { validateScoreSubmission, validateDisplayName, sanitiseDisplayName, allowRequest } = await import(mod("scores"));
 
   // The four required games must all exist and be playable.
   const required = ["memory-match", "brain-battle", "stack-it", "charity-penalty"];
