@@ -19,3 +19,7 @@ A modern digital platform for REFI Foundation, built by Riverways.
 - Impact
 - Get Involved
 
+
+## Engineering standards
+
+Engineering contributors must use the [engineering standards](./docs/engineering/README.md), including the ASD-STE100 communication policy, project terminology register, and engineering review checklist.
