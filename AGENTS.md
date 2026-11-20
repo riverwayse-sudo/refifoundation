@@ -105,3 +105,20 @@ ask the owner for a bypass secret. The owner must change environment variables
 - **The mobile navigation is the only route to interior pages below 800px**;
   `.refi-nav-links` is hidden there. Do not remove `MobileNavigation` from
   `SiteHeader` without replacing it.
+
+
+## Technical communication — ASD-STE100
+
+Use the project communication policy in `docs/engineering/ASD-STE100.md` for
+engineering documentation, operational procedures, test evidence, pull
+requests, defect reports, and user-facing technical instructions.
+
+The policy references ASD-STE100 Issue 9 (15 January 2025). It is a project
+writing policy, not a claim of formal ASD-STE100 compliance. For formal
+compliance reviews, use the complete current official ASD-STE100 Part 1 rules
+and Part 2 dictionary. Do not reproduce the protected standard in this
+repository.
+
+Keep technical terms, identifiers, API contracts, security requirements, and
+meaningful implementation detail intact. Do not simplify text in a way that
+changes system behavior or removes a required warning.
