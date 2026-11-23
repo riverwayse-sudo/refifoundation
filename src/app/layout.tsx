@@ -32,6 +32,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // Favicon and home-screen icons come from src/app/icon.png,
+  // src/app/apple-icon.png and src/app/favicon.ico, which Next.js wires up
+  // automatically from the App Router file conventions.
 };
 
 export const viewport: Viewport = {
