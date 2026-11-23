@@ -6,6 +6,8 @@ import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 import { refiImages } from "@/lib/media";
 import { getPublishedPage, getPublishedProjects } from "@/lib/content";
 
+export const revalidate = 3600;
+
 export async function generateMetadata() {
   const page = await getPublishedPage("our-work");
   return { title: page?.seoTitle || page?.title || "Our Work", description: page?.seoDescription || page?.summary || "Explore REFI Foundation projects and programmes." };

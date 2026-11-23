@@ -1,0 +1,357 @@
+# REFI Foundation CMS — provisioning and acceptance runbook
+
+**Status:** Prepared for owner-led setup. This document does not mean a Supabase
+project has been created, connected, or accepted.
+
+**Related implementation:** `feat/supabase-cms-integration`. The CMS code is integrated into the consolidated feature branch; production provisioning remains pending.
+**Architecture:** Option A — Supabase-backed editor, ISR-cached Next.js public site,
+JSON snapshot fallback, and on-demand ISR cache invalidation after publishing.
+
+Use this runbook only for a dedicated REFI Foundation Supabase project. Do not
+reuse another client's or organisation's project.
+
+---
+
+## 1. Go / no-go checks
+
+Before creating anything, confirm all of the following:
+
+- [ ] The owner accepts Option A: publishing saves to Supabase and invalidates ISR
+      caches; affected pages refresh on the next request without a full deployment.
+- [ ] The owner accepts the documented Supabase Free-tier limitations: inactivity
+      pause risk, no automatic backups, and no leaked-password protection.
+- [ ] A dedicated REFI Supabase project will be used.
+- [ ] The person who will be the first CMS administrator has supplied their
+      work email address. Do not request or share their password.
+- [ ] Someone with access to the REFI Vercel project can add environment variables
+      and configure the required server-side environment variables and cron secret.
+- [ ] A staging-preview access method is available for acceptance testing. The
+      staging deployment is protected by Vercel SSO; CI success alone is not a
+      visual acceptance test.
+
+**Stop if the owner does not accept the static publishing limitation.** Do not
+silently change the public website to runtime database rendering.
+
+## 2. Confirm or create the dedicated Supabase project
+
+1. First locate the REFI-specific Supabase project the owner previously said was
+   connected. Confirm its organisation, project reference, region and ownership.
+2. The currently connected Supabase organisation does not expose a REFI project;
+   it exposes Valoria projects only. Do not use those projects for REFI.
+3. Do not create a replacement project until the owner confirms that the earlier
+   REFI project is unavailable or no longer intended.
+4. If the owner confirms that no REFI project exists, obtain explicit approval
+   before creating `refi-foundation` on the Free plan. Confirm the region with
+   the owner before provisioning.
+5. Use a strong, unique database password and store it in the organisation's
+   password manager. It is not needed by the website application.
+6. Wait until the project reports that it is ready.
+7. Record the project reference and dashboard URL in the secure operations
+   record. Never put credentials in GitHub issues, pull requests, chat messages,
+   or this document.
+
+This is a hard stop: never use Valoria's Supabase project or create a duplicate
+without the owner's confirmation.
+
+## 3. Apply the database migration
+
+1. Open the REFI project in Supabase.
+2. Open SQL Editor and create a new query.
+3. Copy the complete contents of
+   'supabase/migrations/0003_cms_schema.sql' from the reviewed implementation
+   branch.
+4. Run it once and confirm there are no SQL errors.
+5. Open Table Editor and confirm these tables exist:
+   - 'public.content'
+   - 'public.cms_admins'
+6. Open Storage and confirm a public bucket named 'media' exists.
+
+The migration creates the content table, admin allow-list, visibility function,
+row-level security policies and public media bucket. The repository already uses
+migration version `0001` for donations and `0002` for game scores; CMS is therefore
+`0003`. Keep these version prefixes unique and never rename an already-applied
+migration. The CMS migration is designed to be re-applied safely, but do not edit
+the SQL manually in the dashboard. Keep the versioned migration in Git as the
+source of truth.
+
+### Security expectations
+
+- Anonymous/public reads are restricted by row-level security to content that
+  passes the visibility rules.
+- The anon key is public by design; it is not an administrator credential.
+- There are no direct write policies for anonymous or authenticated users.
+- Privileged writes and media uploads use the service-role key on the server only,
+  after the caller is checked against 'cms_admins'.
+- Do not create public sign-up or grant write access to the 'authenticated' role.
+
+## 4. Create the first administrator
+
+1. In Supabase, open Authentication → Users.
+2. Invite or create the first editor using the email address approved by the owner.
+   The user should set their own password through the provider's supported flow.
+3. Copy the user's Auth UUID from the Users screen.
+4. In SQL Editor, add the user to the allow-list, replacing the two example
+   values with the approved email and exact UUID:
+
+   ~~~sql
+   insert into public.cms_admins (user_id, email)
+   values ('00000000-0000-0000-0000-000000000000', 'editor@example.org')
+   on conflict (user_id)
+   do update set email = excluded.email;
+   ~~~
+
+5. Verify the row exists:
+
+   ~~~sql
+   select user_id, email, created_at
+   from public.cms_admins;
+   ~~~
+
+Only add people who are authorised to publish on behalf of the Foundation.
+Removing a user's row revokes CMS administrator access. Do not add an account
+based only on possession of a valid Supabase login.
+
+## 5. Import the existing JSON content
+
+Do this once the migration is applied and the server-side project URL and
+service-role key are available in a secure local environment.
+
+1. Check out the reviewed CMS branch and install dependencies using the lockfile:
+
+   ~~~bash
+   npm ci
+   ~~~
+
+2. Set 'SUPABASE_URL' and 'SUPABASE_SERVICE_ROLE_KEY' in the local shell or
+   ignored '.env.local' file. Do not use a 'NEXT_PUBLIC_*' variable.
+3. Review the current 'content/*.json' files and confirm they contain the
+   intended baseline content.
+4. Run:
+
+   ~~~bash
+   npm run cms:import
+   ~~~
+
+5. Confirm the command reports the number of records imported.
+6. In Supabase Table Editor, inspect the rows in 'public.content' and check
+   collection, slug, publish state and timestamps.
+
+The importer upserts on '(collection, slug)'; it does not delete rows. Running it
+again can overwrite matching records with the repository's JSON values. Do not
+run it again after editors have started working unless the owner has reviewed
+the impact and approved the overwrite.
+
+The current import includes the homepage and records from stories, projects,
+events, impact metrics and pages. Empty JSON collections simply import zero rows.
+
+## 6. Configure Vercel environment variables
+
+In Vercel → Project → Settings → Environment Variables, add the following.
+Use the exact names and do not add a 'NEXT_PUBLIC_' prefix to secrets.
+
+| Variable | Value source | Exposure |
+|---|---|---|
+| 'SUPABASE_URL' | Supabase project API settings | Server configuration |
+| 'SUPABASE_ANON_KEY' | Supabase project API settings | Public key; RLS must protect data |
+| 'SUPABASE_SERVICE_ROLE_KEY' | Supabase project API settings | **Server-only secret** |
+| 'CRON_SECRET' | Generate a long, random secret | **Server-only secret** |
+
+Recommended environment scope:
+
+- Set all four for Production.
+- Set all four for Preview only if the owner wants the preview CMS connected
+  to the same REFI database. This means preview editors can affect the same
+  content and should be an explicit decision.
+- Do not configure these for unrelated projects or environments.
+- Local development should use a private, ignored '.env.local' file. Never commit
+  it or paste its values into a support conversation.
+
+For 'CRON_SECRET', generate a unique random value using an approved password
+manager or secrets generator. Do not use a memorable word, project name, or
+reused password.
+
+After saving variables, trigger a fresh deployment. Environment variable changes
+do not retroactively update an already-built deployment.
+
+## 7. First sign-in and functional acceptance
+
+Use a preview deployment with an approved Vercel protection-bypass method, or
+another owner-approved staging path. Do not weaken preview protection globally
+just to make this test convenient.
+
+### A. Configuration and access
+
+- [ ] Visit '/admin'; the CMS should show its sign-in interface, not the
+      not-connected state.
+- [ ] Sign in with the invited administrator's own credentials.
+- [ ] Confirm the dashboard loads and the expected collections are visible.
+- [ ] Sign out and confirm the session is cleared.
+- [ ] Sign in with a valid Supabase user who is **not** in 'cms_admins'; access
+      must be denied and the session cookies cleared.
+- [ ] Test the password-reset flow using the administrator's email and confirm
+      the email arrives. Do not disclose whether arbitrary addresses have accounts.
+
+### B. Draft and publish lifecycle
+
+Use clearly labelled test content, not a real public announcement.
+
+- [ ] Create a test story and save it as a draft.
+- [ ] Confirm it is absent from the public story listing, story route and sitemap.
+- [ ] Publish the test story.
+- [ ] Confirm the dashboard reports that the deployment was requested.
+- [ ] Wait for the Vercel production/approved test deployment to finish.
+- [ ] Confirm the story appears in the public listing, its route and the sitemap.
+- [ ] Return the story to draft/unpublished; verify the public page is removed after cache invalidation.
+- [ ] Confirm it is no longer publicly visible and is absent from the sitemap.
+
+### C. Supporting page
+
+- [ ] Create a test item under Other pages with a unique slug.
+- [ ] Publish it and request the public page; verify the new content is served without a deployment.
+- [ ] Confirm '/pages/<slug>' loads and the sitemap includes it.
+- [ ] Confirm the special 'our-work' slug does not create a duplicate
+      '/pages/our-work' route.
+- [ ] Confirm the page is not automatically added to the main navigation.
+
+### D. Media upload
+
+- [ ] Upload a small PNG or JPEG below 4 MB.
+- [ ] Confirm it appears in the editor and renders on the public page after the next request.
+- [ ] Confirm an unsupported SVG is rejected.
+- [ ] Confirm a file with a spoofed MIME type or mismatched binary signature is
+      rejected.
+- [ ] Confirm a file larger than 4 MB is rejected with a clear message.
+
+### E. Content and security checks
+
+- [ ] Confirm drafts and future-dated stories are not exposed through the public
+      content read path.
+- [ ] Confirm unverified impact metrics are not shown.
+- [ ] Confirm an ordinary signed-in non-admin cannot write directly to the
+      database through the anon/authenticated API.
+- [ ] Confirm unsafe CTA and registration URLs such as 'javascript:',
+      'data:' and protocol-relative URLs are rejected.
+- [ ] Confirm the service-role key is not present in browser bundles, rendered
+      HTML, client requests, source maps, or repository files.
+- [ ] Confirm public pages remain usable if Supabase is unavailable, using the
+      committed JSON fallback.
+- [ ] Check desktop and mobile layouts, browser console, navigation, page
+      metadata and canonical URLs.
+
+### F. Cron keep-alive
+
+The Vercel cron is configured for '0 6 * * *' (06:00 UTC, 07:00 in Lagos).
+Vercel sends the configured 'CRON_SECRET' as a bearer token for scheduled cron
+requests.
+
+- [ ] Confirm the production deployment includes the cron configuration.
+- [ ] Confirm a request without the bearer secret returns HTTP 401.
+- [ ] Confirm a request with an incorrect secret returns HTTP 401.
+- [ ] Confirm the scheduled invocation returns a successful response and that
+      Supabase responds.
+- [ ] Check Vercel cron logs after the first scheduled run.
+
+This endpoint only checks Supabase activity. It does **not** trigger a website
+full-site rebuild; scheduled content appears on the next hourly ISR refresh.
+
+## 8. Editorial rules and known limitations
+
+These are product behaviours, not defects to work around:
+
+- **Stories:** a story needs a publish date that is not in the future.
+- **Pages:** a page must be marked published and must not have a future publish
+  date.
+- **Events:** an event must have status 'Published' and a future start time at
+  build time. An event already included in a deployment may remain visible after
+  it starts until another deployment runs.
+- **Impact metrics:** a metric is public only when its 'verified' field is true.
+  The editor cannot set this field. Verification currently requires an authorised
+  administrator to update the database directly; there is no in-app approval
+  workflow.
+- **Slugs:** existing slugs are locked. To change a public URL, create a new
+  record with the new slug and unpublish the old record.
+- **Scheduling:** future dates do not create a timer. A later build must run after
+  the date before a scheduled story/page appears. The daily keep-alive is not a
+  scheduler.
+- **Publishing:** a deploy-hook success is not the same as deployment success.
+  Check Vercel deployment status and the resulting public page.
+
+For a time-sensitive release, publish after the intended release time or arrange
+an owner-approved deployment at/after that time. Do not promise exact-minute
+publication with the current design.
+
+## 9. Backups and recovery
+
+The Supabase Free plan has no automatic backups. Take a snapshot after meaningful
+editorial sessions and before any bulk operation:
+
+~~~bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cms:snapshot
+~~~
+
+The command writes two outputs:
+
+- '.cms-backups/cms-backup.json' contains **all editorial rows, including drafts**, and is used by 'npm run cms:restore'. Treat it as internal material: it may contain unpublished announcements or other non-public content.
+- The individual 'content/*.json' files contain **published rows only** and are the safe static fallback used by the public website. An unpublished homepage never overwrites the last published homepage snapshot.
+
+Review both outputs carefully. Commit only the published JSON snapshots. The repository is public. **Never commit the full backup or any unpublished editorial content to Git.** The backup is written under the gitignored '.cms-backups/' directory. Copy it to the Foundation's approved private/encrypted storage and restrict access to authorised operators.
+
+For a full editorial recovery from the privately stored backup:
+
+1. Confirm the target Supabase project is the correct REFI project.
+2. Retrieve the latest '.cms-backups/cms-backup.json' from the Foundation's approved private backup storage, place it in the local '.cms-backups/' directory, then confirm its generated date and contents.
+3. Run 'npm run cms:restore' using the approved service-role key.
+4. Confirm the restored rows in Supabase, including draft/published state.
+5. Trigger CMS cache invalidation and verify the public site refreshes on the next request.
+
+The restore command upserts every row in the backup but does not delete rows created after that backup. It is a recovery aid, not a destructive point-in-time rollback. The regular 'npm run cms:import' command is for the initial import from the public JSON files, not full editorial recovery.
+
+## 10. Rollback and incident response
+
+If the CMS dashboard fails but the public site is healthy:
+
+1. Do not delete the Supabase project or its data.
+2. Check Vercel deployment logs and the required environment variables.
+3. Check Supabase project status and authentication logs.
+4. Keep the public site running from its last successful static deployment or
+   committed JSON fallback while the CMS issue is investigated.
+
+If a public deployment breaks the site:
+
+1. In Vercel → Deployments, identify the last known-good production deployment.
+2. Promote that deployment to Production using the owner's approved rollback
+   procedure.
+3. Confirm the canonical public URL, key routes and navigation recover.
+4. Investigate the failed deployment separately; do not make emergency edits to
+   production secrets without recording the change.
+
+If a service-role key or deploy-hook URL is exposed, rotate it immediately in
+the provider dashboard and update Vercel. Do not merely delete the message or
+repository reference and assume the secret is safe.
+
+## 11. Acceptance sign-off
+
+Do not mark the CMS production-ready until the owner and implementation reviewer
+have recorded:
+
+| Acceptance item | Result / evidence |
+|---|---|
+| Dedicated REFI Supabase project | Pending |
+| Migration and RLS applied | Pending |
+| Initial admin allow-list verified | Pending |
+| Vercel environment variables configured | Pending |
+| First sign-in and non-admin denial | Pending |
+| Draft → publish → public page | Pending |
+| Unpublish → cache invalidation → public removal | Pending |
+| Media upload and rejection tests | Pending |
+| Sitemap and canonical checks | Pending |
+| Keep-alive cron verified | Pending |
+| Snapshot and restore rehearsal | Pending |
+| Desktop/mobile visual review | Pending |
+| Owner acceptance of static scheduling limitation | Pending |
+
+Record the tester, date, deployment URL/commit and evidence for each completed
+item. A green CI run or a Ready Vercel deployment is not a substitute for these
+checks.
+
+**Current state:** CMS provisioning and production acceptance have not been verified from this repository. Confirm the dedicated REFI Supabase project reference and ownership directly in the approved Supabase account before applying migrations or changing hosting configuration. Do not infer that a project does not exist merely because it is not visible through a connected account. Credentials, administrator access, hosting environment variables and end-to-end production acceptance remain unverified here. Keep the CMS integration branch out of `main` until the required review, project verification and owner acceptance are complete. No production deployment is authorised by this runbook.

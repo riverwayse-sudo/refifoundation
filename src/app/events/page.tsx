@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 import { getPublishedEvents } from "@/lib/content";
 
+export const revalidate = 3600;
+
 export const metadata = { title: "Events", description: "Upcoming community, education and sport events from REFI Foundation." };
 
 export default async function EventsPage() {
