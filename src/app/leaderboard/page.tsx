@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, HeartHandshake } from "lucide-react";
 import { GAMES } from "@/lib/games/catalog";
 import { getTopScores, type Leaderboard } from "@/lib/games/leaderboard";
+import { listTopFundraisers, type Fundraiser } from "@/lib/fundraisers";
 import { SiteFooter, SiteHeader } from "../_components/site-chrome";
 import styles from "../engagement.module.css";
 
@@ -16,9 +17,10 @@ export const revalidate = 30;
  * than rendering an empty table that would read as "nobody has played".
  */
 export default async function LeaderboardPage() {
-  const boards = await Promise.all(
-    GAMES.map(async (game) => ({ game, board: await getTopScores(game.slug) })),
-  );
+  const [boards, topFundraisers] = await Promise.all([
+    Promise.all(GAMES.map(async (game) => ({ game, board: await getTopScores(game.slug) }))),
+    listTopFundraisers(5),
+  ]);
 
   const anyUnavailable = boards.some(({ board }) => !board.available);
 
@@ -45,6 +47,14 @@ export default async function LeaderboardPage() {
             </div>
           )}
 
+          <h2 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 34, margin: "0 0 8px" }}>Most raised</h2>
+          <p style={{ marginTop: 0, color: "var(--refi-ink-soft)" }}>
+            Campaign totals are sums of donations that Paystack confirmed. They are not estimates, and a campaign with no
+            confirmed gift is not shown as a winner.
+          </p>
+          <FundraiserBoard list={topFundraisers} />
+
+          <h2 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 34, margin: "48px 0 8px" }}>Top scores</h2>
           <div className={styles.grid2}>
             {boards.map(({ game, board }) => (
               <article className={styles.card} key={game.slug}>
@@ -74,6 +84,56 @@ export default async function LeaderboardPage() {
       <SiteFooter />
     </main>
   );
+}
+
+function FundraiserBoard({ list }: { list: Awaited<ReturnType<typeof listTopFundraisers>> }) {
+  if (!list.available) {
+    return (
+      <p className={styles.note} role="status" style={{ marginTop: 12 }}>
+        {list.reason === "not-configured"
+          ? "Campaign rankings are not enabled on this deployment yet, so none are shown."
+          : "Campaign totals could not be read just now, so no campaign ranking is shown."}
+      </p>
+    );
+  }
+
+  const ranked = list.items.filter((item) => item.totalMinor > 0);
+  if (ranked.length === 0) {
+    return (
+      <p className={styles.note} role="status" style={{ marginTop: 12 }}>
+        No campaign has a confirmed donation yet. <Link href="/fundraise/start" style={{ fontWeight: 700 }}>Start one</Link>{" "}
+        and set the first total.
+      </p>
+    );
+  }
+
+  return (
+    <ol style={{ margin: "14px 0 0", paddingLeft: 0, listStyle: "none" }}>
+      {ranked.map((campaign: Fundraiser, index: number) => (
+        <li
+          key={campaign.slug}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: "12px 0",
+            borderTop: index === 0 ? "none" : "1px solid var(--refi-border)",
+          }}
+        >
+          <span style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+            <strong style={{ minWidth: 22, color: "var(--refi-blue-700)" }}>{index + 1}</strong>
+            <Link href={`/fundraise/${campaign.slug}`}>{campaign.title}</Link>
+            <span style={{ color: "var(--refi-ink-soft)" }}>by {campaign.organiserName}</span>
+          </span>
+          <span style={{ fontWeight: 700 }}>{formatMoney(campaign.totalMinor)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function formatMoney(amountMinor: number) {
+  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(amountMinor / 100);
 }
 
 function Board({ board, unit, slug }: { board: Leaderboard; unit: string; slug: string }) {

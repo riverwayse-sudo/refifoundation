@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isValidWebhookSignature, verifyTransaction } from "@/lib/paystack";
 import { recordDonation } from "@/lib/donations";
+import { attributionFromMetadata } from "@/lib/donation-attribution";
 
 export const runtime = "nodejs";
 
@@ -100,6 +101,10 @@ export async function POST(request: Request) {
     );
   }
 
+  // Attribution comes from the metadata this server wrote at initialize time,
+  // not from the webhook body, so a forged event cannot claim a campaign.
+  const attribution = attributionFromMetadata(verified.metadata);
+
   const result = await recordDonation({
     reference: verified.reference ?? reference,
     amountMinor: verified.amountMinor,
@@ -108,6 +113,9 @@ export async function POST(request: Request) {
     donorName: null,
     initiative: "REFI Play for Impact",
     paidAt: verified.paidAt,
+    fundraiserSlug: attribution.fundraiserSlug,
+    game: attribution.game,
+    playerName: attribution.playerName,
   });
 
   if (!result.stored && !result.duplicate) {

@@ -28,6 +28,12 @@ export type VerifiedPayment = {
   status: string | null;
   paidAt: string | null;
   donorEmail: string | null;
+  /**
+   * Transaction metadata written at initialize time. Paystack stores it and
+   * returns it on verify, so attribution (campaign, game, player) cannot be
+   * altered by the payer after the payment started.
+   */
+  metadata?: Record<string, unknown> | null;
   error?: string;
   retryable?: boolean;
 };
@@ -203,6 +209,10 @@ export async function verifyTransaction(
       };
     }
 
+    const metadata = data.metadata && typeof data.metadata === "object"
+      ? data.metadata as Record<string, unknown>
+      : null;
+
     return {
       ok: true,
       reference: data.reference ?? reference,
@@ -211,6 +221,7 @@ export async function verifyTransaction(
       status: data.status ?? null,
       paidAt: data.paid_at ?? null,
       donorEmail: data.customer?.email ?? null,
+      metadata,
     };
   } catch {
     return {

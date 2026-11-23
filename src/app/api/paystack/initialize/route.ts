@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { initializeTransaction, validateDonationAmount } from "@/lib/paystack";
+import { resolveAttribution } from "@/lib/donation-attribution";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,15 @@ export const runtime = "nodejs";
  * verification can confirm later that what was paid is what was intended.
  */
 export async function POST(request: Request) {
-  let body: { email?: unknown; name?: unknown; amount?: unknown; source?: unknown };
+  let body: {
+    email?: unknown;
+    name?: unknown;
+    amount?: unknown;
+    source?: unknown;
+    fundraiser?: unknown;
+    game?: unknown;
+    player?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -31,6 +40,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: amountCheck.error }, { status: 400 });
   }
 
+  // Attribution is validated before the payment starts: an unknown fundraiser
+  // must fail here, not after the donor has paid.
+  const attribution = await resolveAttribution({
+    fundraiser: body.fundraiser,
+    game: body.game,
+    player: body.player,
+  });
+  if (!attribution.ok) {
+    return NextResponse.json({ error: attribution.error }, { status: 400 });
+  }
+
   const origin = new URL(request.url).origin;
   const reference = `refi-${Date.now()}-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
@@ -39,7 +59,14 @@ export async function POST(request: Request) {
     amountMinor,
     reference,
     callbackUrl: `${origin}/donate/success`,
-    metadata: { source: String(body.source || "donate"), donor_name: name || null, initiative: "REFI Play for Impact" },
+    metadata: {
+      source: String(body.source || "donate"),
+      donor_name: name || null,
+      initiative: "REFI Play for Impact",
+      fundraiser: attribution.value.fundraiserSlug,
+      game: attribution.value.game,
+      player: attribution.value.playerName,
+    },
   });
 
   if (!result.ok) {

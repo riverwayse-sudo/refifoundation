@@ -20,6 +20,10 @@ export type DonationRecord = {
   donorName: string | null;
   initiative: string | null;
   paidAt: string | null;
+  /** Campaign the gift was made for, and the round that led to it. Null when absent. */
+  fundraiserSlug?: string | null;
+  game?: string | null;
+  playerName?: string | null;
 };
 
 export type RecordResult = {
@@ -102,6 +106,9 @@ export async function recordDonation(record: DonationRecord): Promise<RecordResu
         donor_name: record.donorName,
         initiative: record.initiative,
         paid_at: record.paidAt,
+        fundraiser_slug: record.fundraiserSlug ?? null,
+        game: record.game ?? null,
+        player_name: record.playerName ?? null,
       }]),
       cache: "no-store",
     });
