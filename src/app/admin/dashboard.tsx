@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CATEGORIES, FOCUS_AREAS, PROJECT_STATUSES, EVENT_STATUSES } from "../../lib/cms/validation";
 
 // The dashboard is data-driven: each collection declares its fields once, and the
 // same declarations drive the list, the editor and the save payload. That keeps the
@@ -29,10 +30,6 @@ type Collection = {
   fields: Field[];
 };
 
-const CATEGORIES = ["Education", "Community", "Sport & wellbeing", "News", "Impact"];
-const FOCUS_AREAS = ["Education", "Community support", "Sport & wellbeing"];
-const PROJECT_STATUSES = ["Planned", "Active", "Completed"];
-const EVENT_STATUSES = ["Draft", "Published", "Cancelled"];
 
 const COLLECTIONS: Collection[] = [
   {
