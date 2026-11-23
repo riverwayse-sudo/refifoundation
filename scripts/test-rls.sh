@@ -2,13 +2,19 @@
 # Runs the CMS row-level security tests against a throwaway PostgreSQL container.
 #
 # Uses Docker so the tests exercise real PostgreSQL policies rather than mocks.
+<<<<<<< HEAD
 # Local developers may skip when Docker is unavailable; CI must run these tests.
+=======
+# Skips cleanly (exit 0) when Docker is unavailable, so the test never blocks
+# contributors who cannot run containers; CI is expected to have Docker.
+>>>>>>> origin/main
 set -uo pipefail
 
 CONTAINER="${REFI_PG_CONTAINER:-refi-pg-test}"
 PORT="${REFI_PG_PORT:-55432}"
 IMAGE="${REFI_PG_IMAGE:-postgres:16-alpine}"
 
+<<<<<<< HEAD
 skip_or_fail() {
   local reason="$1"
   if [ "${CI:-}" = "true" ]; then
@@ -25,6 +31,16 @@ fi
 
 if ! docker info >/dev/null 2>&1; then
   skip_or_fail "docker daemon is not reachable"
+=======
+if ! command -v docker >/dev/null 2>&1; then
+  echo "SKIP: docker not available, RLS tests not run"
+  exit 0
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  echo "SKIP: docker daemon not reachable, RLS tests not run"
+  exit 0
+>>>>>>> origin/main
 fi
 
 cleanup() {
@@ -37,7 +53,12 @@ cleanup
 if ! docker run -d --name "$CONTAINER" \
   -e POSTGRES_PASSWORD=test -e POSTGRES_DB=refi \
   -p "${PORT}:5432" "$IMAGE" >/dev/null 2>&1; then
+<<<<<<< HEAD
   skip_or_fail "PostgreSQL container could not be started"
+=======
+  echo "SKIP: could not start PostgreSQL container, RLS tests not run"
+  exit 0
+>>>>>>> origin/main
 fi
 
 # Wait for PostgreSQL to accept connections.
