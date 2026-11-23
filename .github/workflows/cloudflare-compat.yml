@@ -15,6 +15,10 @@ on:
   pull_request:
     branches:
       - main
+<<<<<<< HEAD
+      - integrate/match-centre-play-for-impact
+=======
+>>>>>>> origin/main
     paths:
       - "src/**"
       - "public/**"

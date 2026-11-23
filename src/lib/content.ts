@@ -15,19 +15,8 @@ import {
 // When no backend is configured, or Supabase is unavailable, loaders use the
 // committed JSON snapshot under content/. Both paths produce the same shape.
 
-type ContentRecord = Record<string, unknown>;
-
-const records = (value: unknown, key: string): ContentRecord[] => {
-  if (!value || typeof value !== "object") return [];
-  const list = (value as Record<string, unknown>)[key];
-  return Array.isArray(list)
-    ? list.filter((item): item is ContentRecord => Boolean(item && typeof item === "object"))
-    : [];
-};
-
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 const optionalText = (value: unknown): string | undefined => text(value).trim() || undefined;
-const id = (prefix: string, value: unknown, index: number) => text(value) || `${prefix}-${index + 1}`;
 
 export type PublishedStory = {
   id: string;
@@ -43,9 +32,9 @@ export type PublishedStory = {
 
 export async function getPublishedStories(): Promise<PublishedStory[]> {
   const source = await loadContentSource();
-  return records({ stories: source.stories }, "stories")
-    .map((item, index) => ({
-      id: id("story", item.slug, index),
+  return source.stories
+    .map((item) => ({
+      id: text(item.slug),
       title: text(item.title),
       slug: text(item.slug),
       excerpt: optionalText(item.excerpt),
@@ -76,7 +65,7 @@ export type PublishedPage = {
 
 export async function getPublishedPage(slug: string): Promise<PublishedPage | null> {
   const source = await loadContentSource();
-  const item = records({ pages: source.pages }, "pages").find(
+  const item = source.pages.find(
     (page) => text(page.slug) === slug && isVisiblePage(page),
   );
   if (!item) return null;
@@ -94,7 +83,7 @@ export async function getPublishedPage(slug: string): Promise<PublishedPage | nu
 /** Returns every page eligible for static generation and sitemap inclusion. */
 export async function getPublishedPages(): Promise<PublishedPage[]> {
   const source = await loadContentSource();
-  return records({ pages: source.pages }, "pages")
+  return source.pages
     // /our-work is the existing public route; do not emit a duplicate /pages/our-work URL.
     .filter((item) => text(item.slug) !== "our-work" && isVisiblePage(item))
     .map((item) => ({
@@ -120,9 +109,9 @@ export type PublishedProject = {
 
 export async function getPublishedProjects(): Promise<PublishedProject[]> {
   const source = await loadContentSource();
-  return records({ projects: source.projects }, "projects")
-    .map((item, index) => ({
-      id: id("project", item.slug, index),
+  return source.projects
+    .map((item) => ({
+      id: text(item.slug),
       title: text(item.title),
       slug: text(item.slug),
       summary: text(item.summary),
@@ -148,9 +137,9 @@ export type PublishedEvent = {
 
 export async function getPublishedEvents(): Promise<PublishedEvent[]> {
   const source = await loadContentSource();
-  return records({ events: source.events }, "events")
-    .map((item, index) => ({
-      id: id("event", item.slug, index),
+  return source.events
+    .map((item) => ({
+      id: text(item.slug),
       title: text(item.title),
       slug: text(item.slug),
       startsAt: text(item.startsAt),
@@ -175,9 +164,9 @@ export type VerifiedImpactMetric = {
 
 export async function getVerifiedImpactMetrics(): Promise<VerifiedImpactMetric[]> {
   const source = await loadContentSource();
-  return records({ metrics: source.metrics }, "metrics")
+  return source.metrics
     .map((item, index) => ({
-      id: id("metric", item.label, index),
+      id: text(item.label),
       label: text(item.label),
       value: text(item.value),
       context: optionalText(item.context),
