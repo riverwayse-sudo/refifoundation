@@ -204,7 +204,8 @@ async function verifySite(origin) {
     check(`/play/${slug} returns 200`, page.status === 200, `status ${page.status}`);
     check(`/play/${slug} renders instructions`, /How to play/i.test(page.text) && /Controls:/i.test(page.text), "instructions present");
     check(`/play/${slug} states the score rule`, /Score rule:/i.test(page.text), "score rule present");
-    check(`/play/${slug} keeps scores local`, /score stays on this device/i.test(page.text), "local-only stated");
+    check(`/play/${slug} states a score is not money raised`, /not money raised/i.test(page.text), "disclaimer stated");
+    check(`/play/${slug} mentions the leaderboard`, /leaderboard/i.test(page.text), "leaderboard referenced");
   }
 
   const missing = await get("/play/not-a-real-game");
@@ -215,10 +216,13 @@ async function verifySite(origin) {
   check("sitemap includes the hub", sitemap.text.includes("/play</loc>"), "hub listed");
   check("sitemap includes every game route", routes.every((slug) => sitemap.text.includes(`/play/${slug}</loc>`)), "games listed");
 
-  // Leaderboard stays honest.
+  // Leaderboard stays honest: with no score store configured it must say so
+  // rather than publish a ranking, and it must never present an empty table as
+  // "nobody has played".
   const board = await get("/leaderboard");
-  check("leaderboard still publishes no fake rankings", /No verified scores yet/i.test(board.text), "empty state kept");
+  check("leaderboard publishes no ranking without a score store", /Rankings are not enabled|No verified scores for this game yet/i.test(board.text), "honest state kept");
   check("leaderboard names the games that will be ranked", titles.slice(0, 4).every((t) => board.text.includes(t)), "games listed");
+  check("leaderboard does not invent a row", !/<li[^>]*>\s*<strong[^>]*>1<\/strong>/i.test(board.text), "no fabricated top score");
 
   // No donation claim on the play surface. The disclaimer legitimately contains
   // the word "raised" (in "not money raised"), so the check looks for an
@@ -248,8 +252,34 @@ async function verifyScoreApi(origin) {
   };
 
   const ok = await post({ game: "stack-it", score: 7, durationMs: 9000, completed: true, displayName: "Player One" });
-  check("a valid score is validated but not stored", ok.status === 200 && ok.body.accepted === false && ok.body.stored === false, JSON.stringify(ok.body));
+  check("a score without a server session is never stored", ok.status === 200 && ok.body.accepted === false && ok.body.stored === false, JSON.stringify(ok.body));
   check("the endpoint says why nothing was stored", typeof ok.body.message === "string" && ok.body.message.length > 20, "message present");
+  check("the endpoint reports whether sessions are enabled", typeof ok.body.sessionsConfigured === "boolean", `sessionsConfigured=${ok.body.sessionsConfigured}`);
+
+  // A round start must either issue a signed session or say plainly that
+  // verified sessions are off. There is no third answer.
+  const sessionRes = await fetch(`${origin}/api/games/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ game: "stack-it" }),
+  });
+  const sessionBody = await sessionRes.json().catch(() => ({}));
+  check(
+    "a round start issues a session or refuses honestly",
+    (sessionRes.status === 200 && typeof sessionBody.token === "string")
+      || (sessionRes.status === 503 && sessionBody.configured === false),
+    `status ${sessionRes.status} configured=${sessionBody.configured}`,
+  );
+
+  const badSessionGame = await fetch(`${origin}/api/games/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ game: "not-a-game" }),
+  });
+  check("a round start for an unknown game is rejected", badSessionGame.status === 400, `status ${badSessionGame.status}`);
+
+  const forged = await post({ game: "stack-it", score: 5, durationMs: 9000, completed: true, displayName: "Ace", sessionToken: "forged.token" });
+  check("a forged session token is never stored", forged.body.stored === false, `status ${forged.status}`);
 
   const outOfRange = await post({ game: "stack-it", score: 999999, durationMs: 9000, completed: true, displayName: "Ace" });
   check("an out-of-range score is rejected with 422", outOfRange.status === 422, `status ${outOfRange.status}`);

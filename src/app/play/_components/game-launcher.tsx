@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { HeartHandshake, Share2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { GameDefinition } from "@/lib/games/types";
 import { BrainBattle } from "./brain-battle";
 import { CharityPenalty } from "./charity-penalty";
@@ -12,6 +12,8 @@ import { StackIt } from "./stack-it";
 import { useElapsed } from "./use-elapsed";
 import type { GameResult } from "./game-shell";
 import styles from "../play.module.css";
+
+type Session = { token: string };
 
 /**
  * Hosts one round of a game. It is mounted with a `key` per round, so a restart
@@ -23,15 +25,20 @@ function RoundHost({
   game,
   onFinish,
   onRestart,
+  onRoundStart,
 }: {
   game: GameDefinition;
   onFinish: (result: GameResult) => void;
   onRestart: () => void;
+  onRoundStart: () => void;
 }) {
   const [running, setRunning] = useState(false);
   const elapsed = useElapsed(running);
 
-  const onStart = useCallback(() => setRunning(true), []);
+  const onStart = useCallback(() => {
+    setRunning(true);
+    onRoundStart();
+  }, [onRoundStart]);
   const finish = useCallback(
     (next: GameResult) => {
       setRunning(false);
@@ -53,15 +60,45 @@ function RoundHost({
   );
 }
 
+type SubmissionState =
+  | { kind: "idle" }
+  | { kind: "sending" }
+  | { kind: "done"; stored: boolean; message: string }
+  | { kind: "error"; message: string };
+
 /**
- * Hosts a single game: owns the round, the most recent result, and the optional
- * share action. Each game component owns only its own rules and calls `onFinish`
- * once when a round ends.
+ * Hosts a single game: owns the round, the most recent result, the optional
+ * share action and the optional leaderboard submission.
+ *
+ * The round's start is registered with the server (`/api/games/session`) so a
+ * submitted score is tied to a signed session and a server-measured duration. The
+ * score is only submitted when the player asks, and the page states plainly
+ * whether it was stored.
  */
 export function GameLauncher({ game }: { game: GameDefinition }) {
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<GameResult | null>(null);
   const [shared, setShared] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [submission, setSubmission] = useState<SubmissionState>({ kind: "idle" });
+  const session = useRef<Session | null>(null);
+
+  const startRound = useCallback(() => {
+    session.current = null;
+    setSubmission({ kind: "idle" });
+    void fetch("/api/games/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ game: game.slug }),
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { token?: unknown } | null) => {
+        if (body && typeof body.token === "string") session.current = { token: body.token };
+      })
+      .catch(() => {
+        session.current = null;
+      });
+  }, [game.slug]);
 
   const onFinish = useCallback((next: GameResult) => {
     setResult(next);
@@ -73,6 +110,8 @@ export function GameLauncher({ game }: { game: GameDefinition }) {
   const restart = useCallback(() => {
     setResult(null);
     setShared(null);
+    session.current = null;
+    setSubmission({ kind: "idle" });
     setRound((r) => r + 1);
   }, []);
 
@@ -97,9 +136,56 @@ export function GameLauncher({ game }: { game: GameDefinition }) {
     }
   }
 
+  async function submitScore() {
+    if (!result) return;
+    if (!session.current) {
+      setSubmission({
+        kind: "error",
+        message: "This round was not registered with the server, so it cannot be ranked. Start a new round and submit at the end.",
+      });
+      return;
+    }
+    setSubmission({ kind: "sending" });
+    try {
+      const response = await fetch("/api/scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          game: game.slug,
+          score: result.score,
+          durationMs: result.durationMs,
+          completed: result.completed,
+          displayName,
+          sessionToken: session.current.token,
+        }),
+      });
+      const body = await response.json() as {
+        ok?: boolean;
+        stored?: boolean;
+        message?: string;
+        error?: string;
+        errors?: string[];
+      };
+      if (!response.ok || !body.ok) {
+        setSubmission({
+          kind: "error",
+          message: body.error || body.errors?.[0] || "The score could not be submitted.",
+        });
+        return;
+      }
+      setSubmission({
+        kind: "done",
+        stored: Boolean(body.stored),
+        message: body.message || (body.stored ? "Your score is on the leaderboard." : "This round was not stored."),
+      });
+    } catch {
+      setSubmission({ kind: "error", message: "The score could not be submitted. Check your connection and try again." });
+    }
+  }
+
   return (
     <>
-      <RoundHost key={round} game={game} onFinish={onFinish} onRestart={restart} />
+      <RoundHost key={round} game={game} onFinish={onFinish} onRestart={restart} onRoundStart={startRound} />
 
       {result && (
         <div className={styles.overlayActions} style={{ justifyContent: "flex-start", marginTop: 18 }}>
@@ -117,10 +203,50 @@ export function GameLauncher({ game }: { game: GameDefinition }) {
         </p>
       )}
 
+      {result && submission.kind !== "done" && (
+        <div className={styles.notice} style={{ marginTop: 18 }}>
+          <label htmlFor={`score-name-${game.slug}`} style={{ display: "block", fontWeight: 700, color: "var(--refi-ink)", marginBottom: 8 }}>
+            Name for the leaderboard (optional)
+          </label>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              id={`score-name-${game.slug}`}
+              name="displayName"
+              type="text"
+              value={displayName}
+              maxLength={24}
+              autoComplete="nickname"
+              placeholder="Player One"
+              onChange={(event) => setDisplayName(event.target.value)}
+              style={{ minHeight: 44, padding: "0 12px", border: "1px solid var(--refi-border-strong)", font: "inherit" }}
+            />
+            <button type="button" className={styles.primary} onClick={submitScore} disabled={submission.kind === "sending"}>
+              {submission.kind === "sending" ? "Submitting..." : "Submit score"}
+            </button>
+          </div>
+          <p style={{ margin: "10px 0 0", color: "var(--refi-ink-soft)" }}>
+            Only letters, numbers and spaces are kept. Do not enter an email address. A score is not money raised.
+          </p>
+          {submission.kind === "error" && (
+            <p role="alert" style={{ margin: "10px 0 0", color: "var(--refi-red-700, #9b1c1c)", fontWeight: 700 }}>
+              {submission.message}
+            </p>
+          )}
+        </div>
+      )}
+
+      {submission.kind === "done" && (
+        <p role="status" className={styles.notice} style={{ marginTop: 18 }}>
+          <strong>{submission.stored ? "Score verified and stored." : "Score not stored."}</strong>{" "}
+          {submission.message}
+        </p>
+      )}
+
       <div className={styles.notice}>
-        <strong>Your score stays on this device.</strong> Scores are not submitted, stored or ranked yet, so this is a
-        local result only. Playing does not create a donation and a score is not money raised, a reward or a prize. If
-        you choose to give, support reaches the Foundation through Paystack.
+        <strong>A score is not money raised, a reward or a prize.</strong> Rounds started here are registered with the
+        server, so a submitted score can be checked and ranked on the leaderboard when verified game sessions are
+        enabled. If they are not enabled, the score stays on your device. If you choose to give, support reaches the
+        Foundation through Paystack.
       </div>
     </>
   );
