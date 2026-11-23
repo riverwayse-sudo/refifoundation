@@ -125,6 +125,7 @@ credentials must be confirmed before any migration or environment change.
    | `FOOTBALL_API_BASE` | API-Football API endpoint | Optional; defaults to `https://v3.football.api-sports.io` |
    | `FOOTBALL_REFRESH_SECONDS` | Operator setting | Optional; defaults to 120 seconds; do not lower without checking quota |
    | `LIVE_SCORE_DAILY_BUDGET` | Operator setting | Optional; defaults to a conservative 90-request ceiling |
+   | `SCORE_SESSION_SECRET` | Generate a long random secret, at least 32 characters | **Server only.** Signs the game sessions that make a score verifiable. Without it, scores stay on the device and the leaderboard stays empty |
 6. Redeploy. Then visit `/admin` and sign in.
 
 Current Vercel production environment inspection found only `NEXT_PUBLIC_SITE_URL`, `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No Supabase, Brevo, Paystack, API-Football or cron credentials are currently configured. The old GitHub OAuth values can be removed after the new CMS is accepted.
