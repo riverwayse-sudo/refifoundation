@@ -4,7 +4,8 @@
 // Runs the actual build and the actual route with temporary content, rather
 // than reimplementing the filter, so it exercises the same code path the
 // deployed site uses. Asserts that a published story is included, that a
-// scheduled story is not, and that every URL is the canonical origin.
+// scheduled story is not, and that every URL is the canonical origin and
+// canonicalises to itself.
 
 import { spawn } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -98,6 +99,18 @@ async function main() {
   assert(urls.length > 0, "sitemap contains URLs");
   const offOrigin = urls.filter((u) => !u.startsWith(CANONICAL));
   assert(offOrigin.length === 0, `all URLs use the canonical origin (${offOrigin.length} off-origin)`);
+
+  // A canonical that points at "/" on every page tells search engines that each
+  // subpage is a duplicate of the homepage, so the real page is never indexed.
+  for (const url of urls) {
+    const path = new URL(url).pathname;
+    const expected = path === "/" ? CANONICAL : `${CANONICAL}${path}`;
+    const res = await fetch(`${origin}${path}`);
+    const html = await res.text();
+    const actual = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1];
+    assert(actual === expected, `${path} canonicalises to itself (${actual ?? "none"})`);
+  }
+
   console.log(`  sitemap URL count: ${urls.length}`);
 }
 

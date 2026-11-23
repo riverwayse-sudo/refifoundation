@@ -12,7 +12,9 @@ export const metadata: Metadata = {
   description:
     "REFI Foundation supports practical opportunities for children, young people and communities across Africa.",
   alternates: {
-    canonical: "/",
+    // "./" resolves against the current route, so each page canonicalises to
+    // itself. A fixed "/" made every subpage claim to be the homepage.
+    canonical: "./",
   },
   openGraph: {
     type: "website",
