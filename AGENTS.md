@@ -229,9 +229,12 @@ Never ask for secrets in chat.
   failure; never show fabricated scores.
 - **Play for Impact** lives at `/play`; each game is served by `/play/[game]`.
   The game catalog is the single source of truth. A score is not a donation,
-  reward or prize. Browser-reported scores are not authoritative and must not
-  be published to a leaderboard until a server-issued session can validate
-  them.
+  reward or prize. A round starts at `POST /api/games/session`, which signs a
+  stateless HMAC token (`SCORE_SESSION_SECRET`), and `/api/scores` refuses to
+  store a score without one. Keep that order: never accept a score that has no
+  server-measured start time, and never publish a score the store did not
+  accept. Without the secret, `/api/games/session` answers 503 and scores stay
+  on the device. This bounds the claim; it is not an anti-cheat engine.
 - **Payments must be verified server-side.** Never trust a success URL or event
   body as proof of payment. Verify amount and currency with Paystack, validate
   the raw-body webhook signature, re-verify the transaction, and use the unique
@@ -242,8 +245,17 @@ Never ask for secrets in chat.
   is version-controlled but not automatically applied. Until an owner applies
   it and supplies the required Paystack/Supabase server credentials, donation
   totals remain unavailable; do not invent totals or claim successful storage.
-- **Game score migration** is also not applied. Do not enable public score
-  persistence without server-issued session validation.
+- **Game score migration** (`supabase/migrations/0002_game_scores.sql`) is also
+  not applied. The table's unique `(session_id, game)` constraint is what makes a
+  replayed submission a no-op; do not drop it to "fix" a duplicate error.
+- **Fundraisers** (`/fundraise`, `/fundraise/[slug]`) attribute a donation to a
+  campaign by slug. The slug is validated before the payment starts and read
+  back from verified transaction metadata, never from the browser at webhook
+  time. Campaign totals come from the `fundraiser_totals` view; do not compute a
+  total in the application, and do not render an unreadable store as a zero.
+  `supabase/migrations/0004_fundraisers.sql` is version-controlled, not applied.
+  To withdraw a campaign, set its `status` to `hidden`; do not delete it while it
+  holds donations.
 - **Contact delivery** needs `BREVO_API_KEY`, `BREVO_SENDER_EMAIL` and
   `REFI_CONTACT_EMAIL`. Without them `/api/contact` answers 503 and names the
   fallback mailbox. Never report success unless Brevo accepted the message.
@@ -251,6 +263,14 @@ Never ask for secrets in chat.
   `.refi-nav-links` is hidden there. Do not remove `MobileNavigation` from
   `SiteHeader` without replacing it.
 
+
+## Operational readiness
+
+Deployed is not operational. A route that answers 503 because a value is missing
+is working exactly as designed, and the fix belongs to the owner, not to the
+code. `docs/operations/provisioning-checklist.md` lists the values and the tests
+that turn each integration on; `docs/operations/completion-checklist.md` records
+the current state of every area and the exact owner action that remains.
 
 ## Technical communication — ASD-STE100
 

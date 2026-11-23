@@ -348,3 +348,19 @@ The CMS uses hourly ISR revalidation for scheduled content. Future-dated stories
 and pages appear on the next hourly refresh after their publish time; events are
 removed on the next hourly refresh after they start. The daily keep-alive cron only
 checks Supabase availability. This is not an exact-minute scheduler.
+
+## Campaigns (Play for Impact fundraisers)
+
+Anyone can create a campaign at `/fundraise/start`. It appears at
+`/fundraise/<slug>` immediately and is listed on `/fundraise`.
+
+- **To withdraw a campaign**, run
+  `update public.fundraisers set status = 'hidden' where slug = '<slug>';`.
+  Do not delete a campaign that holds donations: the row is what the totals view
+  joins on.
+- **To restore it**, set `status = 'active'` again.
+- A campaign total is the sum of confirmed NGN donations for that slug. If you
+  need a correction, correct the donation row, not the campaign: the view is the
+  only source of a total.
+- Campaign creation is rate limited to three per hour per address. There is no
+  moderation queue, so review new campaigns when they appear.
