@@ -1,0 +1,40 @@
+name: Feature request
+description: Define a user need and measurable acceptance criteria.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: State the problem. Do not prescribe a solution yet.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Intended result
+      description: State what the user must be able to do.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List testable results. Use one criterion per line.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints and dependencies
+      description: List relevant technical, security, privacy, accessibility, and operational constraints.
+    validations:
+      required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting evidence
+      description: Add research, examples, or user feedback. Mark assumptions as assumptions.
+    validations:
+      required: false
