@@ -4,8 +4,7 @@ This document is for whoever owns and runs the REFI Foundation website. It
 records what exists today, what is deliberately not live, and exactly what the
 owner needs to do to finish the remaining work.
 
-Everything below was verified against the repository and the live site. Where
-something is unverified or blocked, it says so.
+Repository, CI, deployment and configuration evidence was checked on 2026-11-25. A READY deployment proves that the code was deployed; it does not prove that external integrations are operational. Where live provider or browser acceptance is still outstanding, this document says so.
 
 - Live site: https://www.refifoundation.com
 - Repository: `riverwayse-sudo/refifoundation`
@@ -33,7 +32,7 @@ The public pages are cached with Next.js ISR. They read Supabase server-side whe
 Everything here runs at **zero recurring cost**. No paid tools, subscriptions or
 services are used, and none are required.
 
-The additional Contact, Match Centre, Play for Impact and CMS routes are in the integration branch and are **not live on production yet**.
+The following feature routes are now included in the production deployment from `main`: `/contact`, `/matches`, `/play`, `/play/[game]`, `/leaderboard`, `/fundraise`, `/fundraise/start`, `/fundraise/[slug]` and `/admin`. PR #50 (dropdown and game-input safeguards) and PR #49 (game-to-fundraiser journey) are merged. These routes are **deployed, not all operational**: provider credentials and database migrations remain outstanding. CI passed for lint, type checks, CMS/RLS tests, build, sitemap, live-feed safeguards, donation integrity and game verification. The production deployment is `READY` on commit `12eb222`.
 
 ## 2. What is deliberately not live
 
@@ -42,10 +41,10 @@ supply, and shipping a half-working version would be misleading to visitors.
 
 | Item | Why it is held back | What unblocks it |
 |---|---|---|
-| CMS not yet connected | CMS implementation is being consolidated on `feat/supabase-cms-integration`; the dedicated REFI Supabase project and production configuration still need direct verification | Section 3 (verify project, configure and accept) |
-| Contact form | Implemented and integrated in PR #31; Brevo configuration, edge rate limiting and end-to-end delivery test remain outstanding | Section 4 |
-| Online donations | Payment code is integrated in PR #27/#30, but Paystack and Supabase credentials are not configured; no live payment is enabled | Section 4 |
-| Match Centre / Play for Impact | Integrated in PR #27; production release and live visual/provider acceptance remain outstanding | Section 4 |
+| CMS | The CMS route is deployed, but the dedicated REFI Supabase project, schema and production credentials are not configured | Section 3 (verify project, configure and accept) |
+| Contact form | Deployed, but Brevo credentials and end-to-end delivery are not configured or accepted | Section 4 |
+| Online donations | Deployed, but Paystack and REFI Supabase credentials/migrations are missing; no live payment is enabled | Section 4 |
+| Match Centre / Play for Impact | Deployed. Match data, persistent scores, leaderboard and fundraising activation remain blocked by missing provider credentials and REFI database provisioning | Section 4 and the provisioning checklist |
 | Official logo | Assets and site integration are in draft PR #21; visual approval and merge remain outstanding | Section 5 |
 
 ## 3. The CMS
@@ -58,9 +57,9 @@ page caches; affected pages refresh on the next request without a full deploymen
 This replaces the earlier GitHub-based editor. The GitHub OAuth app and its
 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` settings are no longer used by the new CMS and can be removed from Vercel after production acceptance.
 
-### Status: integrated feature branch; live provisioning not verified
+### Status: deployed, inactive; live provisioning not verified
 
-The CMS implementation, SQL schema and automated checks are being consolidated on `feat/supabase-cms-integration`. The dedicated REFI Supabase project, its ownership, schema, administrator allow-list and production environment variables have not been verified from the available connected account.
+The CMS implementation, SQL schema and automated checks are on production `main`. The dedicated REFI Supabase project, its ownership, schema, administrator allow-list and production environment variables have not been verified from the available connected account.
 Do not create another project until the owner confirms whether the REFI-specific project
 created earlier is the intended CMS project. Until the credentials and migration are
 verified against that project, treat /admin as not accepted for production.
@@ -78,7 +77,7 @@ verified against that project, treat /admin as not accepted for production.
 | Public pages unaffected | Every public page returns 200 with no backend configured | Pass |
 | Build and type checks | `npm run build`, `npm run typecheck`, `npm run lint` | Pass |
 
-The CMS code has not yet been deployed to production. The original CMS branch's unit and RLS tests passed; the consolidated integration branch must pass its full CI suite before merge. The tests were deliberately checked against weakened policies and temporary permissions to confirm they catch regressions.
+The CMS code is deployed, but the live sign-in and publishing workflow has not been accepted because the dedicated REFI Supabase project is not available in the connected Supabase account. CI's CMS unit and RLS tests pass; those tests do not replace provisioning and end-to-end acceptance against the REFI project.
 
 ### What has not been verified
 
@@ -226,9 +225,13 @@ mailto:hello@refifoundation.org fallback remains the reliable contact route.
 
 `/donate` and the Paystack initialization, verification and webhook code are integrated in PR #27/#30. No live payment is enabled until the REFI Supabase migrations and `PAYSTACK_SECRET_KEY` are configured, then test-mode and live-mode transactions are verified.
 
-### Play for Impact leaderboard
+### Play for Impact games, scores and leaderboard
 
-The games are implemented, but the public leaderboard is intentionally empty. Browser-submitted scores are validated and then **not stored**, because the server cannot prove that a browser-reported score came from a genuine game session. Do not publish rankings or promise leaderboard functionality until server-issued game sessions and durable score verification are implemented. Fundraising totals must count only successfully verified Paystack transactions.
+The four games are deployed at `/play` and `/play/[game]`. The game hub now links completed rounds to `/fundraise/start?game=<slug>`; the fundraiser form validates the slug against the published game catalogue before preselecting it. This journey passed CI after PR #49 and #50.
+
+Score integrity now uses a server-issued HMAC session: `/api/games/session` signs the round start and `/api/scores` checks the token and server-measured duration. The score store also enforces one submission per session and game. This is a bounded integrity check, not a full anti-cheat system.
+
+The public leaderboard remains intentionally inactive until the dedicated REFI Supabase project is confirmed, migrations `0001_donations.sql`, `0002_game_scores.sql` and `0004_fundraisers.sql` are applied in order, and `SCORE_SESSION_SECRET` plus the required Supabase server credentials are configured. Until then, a game can run locally in the browser, but the server must not claim that a score was saved or publish rankings. Fundraising totals must count only successfully verified Paystack transactions.
 
 ## 5. The logo
 
@@ -281,11 +284,11 @@ should read "RAISING • EMPOWERING • TRANSFORMING LIVES."
 | Logo | Visually review and approve draft PR #21 (section 5) |
 | Contact form | Configure Brevo, edge rate limiting and verify delivery (section 4) |
 | Donations | Configure Paystack and REFI Supabase, apply migrations and verify test/live payment lifecycle; no live payment flow yet |
-| Match centre | Integrated in PR #27; verify provider reliability, visual behaviour and production acceptance |
+| Match Centre | Deployed at `/matches`; configure `API_FOOTBALL_KEY`, set the plan's request budget, and complete live fixture acceptance. Without the key, the API correctly reports `configured: false` rather than inventing scores |
 | Branch protection | Turn on a `main` rule requiring a pull request and the `verify` check (see below) |
 | Story pages in sitemap | Fixed — published stories now appear in `sitemap.xml` |
 
-The remaining work is acceptance and configuration: verify the dedicated REFI CMS backend, approve the logo, configure Brevo and Paystack, test payment and contact delivery, complete live Match Centre acceptance, and decide whether verified leaderboard sessions are in scope. Production release remains a separate approval gate.
+The remaining work is operational activation and acceptance: confirm the dedicated REFI Supabase project, apply the ordered migrations, configure Brevo and Paystack, test contact and payment delivery, configure API-Football, test live fixtures, and complete the game-session/leaderboard acceptance tests. The code is already deployed; do not treat that as proof that these integrations are active.
 
 ### Sitemap and indexing
 
