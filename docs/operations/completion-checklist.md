@@ -11,7 +11,7 @@ An area can be deployed and not operational. That is the normal state while a
 credential or a migration is missing. The route answers with a refusal, and the
 refusal is correct.
 
-Last updated: 2026-11-23. Update the date when you change a row.
+Last updated: 2026-11-25. PRs #50 and #49 are merged into `main`; production deployment `12eb222` is READY. Update the date when you change a row.
 
 ## State of each area
 
@@ -24,17 +24,19 @@ Last updated: 2026-11-23. Update the date when you change a row.
 | Contact form | **Deployed, inactive** | `POST /api/contact` answers 503 and names the fallback mailbox | `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `REFI_CONTACT_EMAIL`, `BREVO_SENDER_NAME` |
 | CMS (Supabase) | **Deployed, inactive** | `/admin` loads; `/api/cms/content` answers 401; sign-in reports that Supabase is not provisioned | Supabase project, `0003_cms_schema.sql`, `SUPABASE_*` values, one editor account |
 | Donations (Paystack) | **Deployed, inactive** | `/api/paystack/initialize` answers 503 without a key and 400 on bad input; the success page never claims a payment succeeded | `PAYSTACK_SECRET_KEY`, `0001_donations.sql` |
-| Fundraise campaigns | **Deployed, inactive** | `/fundraise` renders; the API reports storage is not configured; an unknown campaign is refused before checkout | `0004_fundraisers.sql` plus the Supabase values |
-| Game scores and leaderboard | **Deployed, inactive** | `/api/games/session` answers 503 `configured:false`; `/api/scores` validates and refuses to store; `/leaderboard` states that rankings are not enabled | `SCORE_SESSION_SECRET` (32+ chars), `0002_game_scores.sql` |
-| Match Centre | **Deployed, inactive** | `/api/matches/live` answers 503 `configured:false`; `/matches` shows the unavailable message | `API_FOOTBALL_KEY`, `LIVE_SCORE_DAILY_BUDGET` |
-| CI (`verify`) | **Operational** | Install from the lockfile, lint, type check, build, sitemap, live feed, donations, games and contact checks pass on every PR | Branch protection is not enabled; this is an owner action |
+| Fundraise campaigns | **Deployed, inactive** | `/fundraise` and `/fundraise/start` are deployed; PR #49 connects completed game rounds to fundraiser creation and validates the selected game slug | `0004_fundraisers.sql`, Supabase credentials and Paystack configuration |
+| Game scores and leaderboard | **Deployed, inactive** | Server-issued HMAC sessions and server-measured duration checks are implemented; `/api/games/session` remains unconfigured without its secret, and persistent scores cannot be accepted until the REFI database is provisioned | `SCORE_SESSION_SECRET` (32+ chars), `0002_game_scores.sql`, Supabase server credentials |
+| Match Centre | **Deployed, inactive** | `/matches` and the cached, budget-guarded live-feed endpoint are deployed; CI verifies quota, cache, concurrency and failure behaviour. No provider key is configured in production | `API_FOOTBALL_KEY`, `LIVE_SCORE_DAILY_BUDGET` |
+| Dropdown and game interaction system | **Deployed** | PR #50 merged; CI passes the shared dropdown-system guard and Memory Match, Stack It and Brain Battle regression checks. Browser acceptance on mobile and desktop remains outstanding | Manual browser acceptance across all native selects and game controls |
+| Game-to-fundraiser journey | **Deployed** | PR #49 merged; CI passes the game hub and validated game-slug preselection checks | End-to-end acceptance after Supabase and Paystack provisioning |
+| Production deployment | **Deployed** | Vercel production deployment is `READY` on `main` commit `12eb222`; domain alias is `www.refifoundation.com` | Live route/browser acceptance is still required |
+| CI (`verify`) | **Operational** | PR #49 and #50 both pass lint, type check, build, CMS/RLS, sitemap, live-feed, donation and game checks | Branch protection is not enabled; this is an owner action |
 | Accessibility | **Operational (tested, not certified)** | One `h1` per page, `lang="en"`, every image has `alt`, labelled form fields, visible focus | No formal WCAG 2.2 AA audit has been done. Do not claim compliance |
 | Performance | **Operational** | Pages are static or ISR; no client component on a content page; page weight is under 50 KB of HTML | None |
 
 ## Owner actions, in order
 
-1. Create a Supabase project. Apply migrations `0001`, `0002`, `0003` and `0004`
-   in order. Create the `media` bucket. Create one editor account.
+1. Confirm the dedicated REFI Supabase project before changing data. The connected Supabase account currently exposes only Valoria projects; do not use a Valoria project for REFI. If no REFI project exists, obtain owner approval before creating one. Then apply migrations `0001`, `0002`, `0003` and `0004` in order, create the `media` bucket if the migration does not create it, and create one editor account.
 2. Set `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` in
    Vercel, Production and Preview scopes.
 3. Set `SCORE_SESSION_SECRET` to at least 32 random characters.
@@ -55,7 +57,9 @@ Last updated: 2026-11-23. Update the date when you change a row.
 | Change | Why | PR |
 | --- | --- | --- |
 | `docs/operations/provisioning-checklist.md` | A checklist that turns each refusal into a working integration | #45 |
-| Server-issued game sessions, persistent scores, real leaderboard | A score from a browser is a claim; a signed session and a server-measured duration bound the claim, and the store accepts each round once | #46 |
+| Server-issued game sessions, persistent scores, real leaderboard | A signed session and server-measured duration bound the claim; persistent storage still requires production provisioning | #46 |
+| Shared dropdown system and game interaction safeguards | Standardises native select controls and prevents known game input regressions | #50 |
+| Game-to-fundraiser journey | Carries a validated game slug from a completed round into fundraiser creation | #49 |
 | Play for Impact campaigns with donation attribution | Fundraising needs a campaign total that is a sum of confirmed payments, not a figure typed by anyone | #47 |
 | This checklist and the AGENTS.md update | Records deployed versus operational so "merged" is not read as "working" | #48 |
 
