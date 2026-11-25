@@ -109,6 +109,10 @@ export function StackIt({ onFinish, onStart, onRestart, elapsed }: GameProps) {
   useEffect(() => {
     if (phase !== "playing") return;
     const onKey = (event: KeyboardEvent) => {
+      // Do not double-activate a focused button or steal keys from form controls.
+      // Native Enter/Space activation already dispatches the button's click.
+      if (event.repeat) return;
+      if (event.target instanceof Element && event.target.closest("button, a, input, textarea, select, [contenteditable='true']")) return;
       if (event.key === " " || event.key === "Enter") {
         event.preventDefault();
         drop();

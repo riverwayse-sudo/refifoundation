@@ -100,7 +100,7 @@ async function verifyRules() {
   const mod = (name) => new URL(`../src/lib/games/${name}.ts`, import.meta.url).href;
 
   const { GAMES, getGame, gamesInCategory, GAME_CATEGORIES } = await import(mod("catalog"));
-  const { buildDeck, isMatch, memoryScore, clampPairs, MEMORY_SYMBOLS } = await import(mod("memory-match"));
+  const { buildDeck, canRevealCard, isMatch, memoryScore, clampPairs, MEMORY_SYMBOLS } = await import(mod("memory-match"));
   const { pickQuestions, quizScore, quizPercent, QUIZ_QUESTIONS, QUIZ_LENGTH } = await import(mod("brain-battle"));
   const { dropBlock, initialBlock, overlap, stackScore, STACK_MIN_WIDTH } = await import(mod("stack-it"));
   const { resolvePenalty, penaltyScore, keeperDive, PENALTY_TAKERS } = await import(mod("penalty"));
@@ -126,6 +126,13 @@ async function verifyRules() {
   check("memory score never goes negative", memoryScore(4, 100, 5000, 4) === 0, "clamped to zero");
   check("memory score is capped at pairs x 100", memoryScore(6, 6, 0, 6) <= 600, "within bounds");
   check("memory pair count is clamped to the symbol set", clampPairs(999) === MEMORY_SYMBOLS.length, `max ${MEMORY_SYMBOLS.length}`);
+  check("memory board accepts the first reveal during play", canRevealCard(true, 0, false, false), "first card allowed");
+  check("memory board accepts a second distinct reveal", canRevealCard(true, 1, false, false), "second card allowed");
+  check("memory board locks while two cards are visible", !canRevealCard(true, 2, false, false), "third card blocked during mismatch delay");
+  check("memory board rejects an already visible card", !canRevealCard(true, 1, true, false), "duplicate reveal blocked");
+  check("memory board rejects a matched card", !canRevealCard(true, 0, false, true), "matched card blocked");
+  check("memory board rejects reveals before play starts", !canRevealCard(false, 0, false, false), "intro phase locked");
+  check("memory board rejects reveals after completion", !canRevealCard(false, 0, false, false), "completed phase locked");
 
   // Brain Battle.
   const picked = pickQuestions(QUIZ_LENGTH);
