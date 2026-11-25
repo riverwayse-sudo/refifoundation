@@ -104,12 +104,22 @@ export default function PlayHubPage() {
             <Link className={styles.primary} href="/donate">
               <HeartHandshake size={16} aria-hidden="true" /> Support the Foundation
             </Link>
+            <Link className={styles.primary} href="/fundraise">
+              <HeartHandshake size={16} aria-hidden="true" /> Explore fundraisers
+            </Link>
+            <Link
+              className={styles.ghost}
+              style={{ background: "#fff", color: "var(--refi-blue-900)", borderColor: "var(--refi-border-strong)" }}
+              href="/fundraise/start"
+            >
+              Start a fundraiser
+            </Link>
             <Link
               className={styles.ghost}
               style={{ background: "#fff", color: "var(--refi-blue-900)", borderColor: "var(--refi-border-strong)" }}
               href="/leaderboard"
             >
-              <Target size={16} aria-hidden="true" /> How the leaderboard will work
+              <Target size={16} aria-hidden="true" /> View leaderboards
             </Link>
           </div>
         </div>
