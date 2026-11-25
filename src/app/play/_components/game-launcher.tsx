@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { HeartHandshake, Share2 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GameDefinition } from "@/lib/games/types";
 import { BrainBattle } from "./brain-battle";
 import { CharityPenalty } from "./charity-penalty";
@@ -81,22 +81,45 @@ export function GameLauncher({ game }: { game: GameDefinition }) {
   const [shared, setShared] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [submission, setSubmission] = useState<SubmissionState>({ kind: "idle" });
+  const [sessionStatus, setSessionStatus] = useState<"idle" | "requesting" | "ready" | "unavailable">("idle");
   const session = useRef<Session | null>(null);
+  const sessionRequest = useRef<AbortController | null>(null);
+
+  useEffect(() => () => {
+    sessionRequest.current?.abort();
+  }, []);
 
   const startRound = useCallback(() => {
+    // A restarted round must not inherit a late response from the previous
+    // session request. Abort it and bind the next token to this round only.
+    sessionRequest.current?.abort();
+    const controller = new AbortController();
+    sessionRequest.current = controller;
     session.current = null;
+    setSessionStatus("requesting");
     setSubmission({ kind: "idle" });
+
     void fetch("/api/games/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ game: game.slug }),
+      signal: controller.signal,
     })
       .then((response) => (response.ok ? response.json() : null))
       .then((body: { token?: unknown } | null) => {
-        if (body && typeof body.token === "string") session.current = { token: body.token };
+        if (controller.signal.aborted) return;
+        if (body && typeof body.token === "string") {
+          session.current = { token: body.token };
+          setSessionStatus("ready");
+        } else {
+          session.current = null;
+          setSessionStatus("unavailable");
+        }
       })
       .catch(() => {
+        if (controller.signal.aborted) return;
         session.current = null;
+        setSessionStatus("unavailable");
       });
   }, [game.slug]);
 
@@ -110,7 +133,10 @@ export function GameLauncher({ game }: { game: GameDefinition }) {
   const restart = useCallback(() => {
     setResult(null);
     setShared(null);
+    sessionRequest.current?.abort();
+    sessionRequest.current = null;
     session.current = null;
+    setSessionStatus("idle");
     setSubmission({ kind: "idle" });
     setRound((r) => r + 1);
   }, []);
@@ -141,7 +167,9 @@ export function GameLauncher({ game }: { game: GameDefinition }) {
     if (!session.current) {
       setSubmission({
         kind: "error",
-        message: "This round was not registered with the server, so it cannot be ranked. Start a new round and submit at the end.",
+        message: sessionStatus === "requesting"
+          ? "The server is still registering this round. Wait a moment, then submit again."
+          : "This round was not registered with the server, so it cannot be ranked. Your score remains on this device. Start a new round to try again.",
       });
       return;
     }
@@ -223,8 +251,13 @@ export function GameLauncher({ game }: { game: GameDefinition }) {
               onChange={(event) => setDisplayName(event.target.value)}
               style={{ minHeight: 44, padding: "0 12px", border: "1px solid var(--refi-border-strong)", font: "inherit" }}
             />
-            <button type="button" className={styles.primary} onClick={submitScore} disabled={submission.kind === "sending"}>
-              {submission.kind === "sending" ? "Submitting..." : "Submit score"}
+            <button
+              type="button"
+              className={styles.primary}
+              onClick={submitScore}
+              disabled={submission.kind === "sending" || sessionStatus === "requesting"}
+            >
+              {submission.kind === "sending" ? "Submitting..." : sessionStatus === "requesting" ? "Registering round..." : "Submit score"}
             </button>
           </div>
           <p style={{ margin: "10px 0 0", color: "var(--refi-ink-soft)" }}>
