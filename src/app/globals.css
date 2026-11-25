@@ -318,9 +318,9 @@ img { max-width: 100%; }
 .refi-contact-form { display: grid; gap: 20px; padding: clamp(22px, 4vw, 38px); border: 1px solid var(--refi-border); background: white; box-shadow: 0 20px 60px rgba(7,26,58,.07); }
 .refi-contact-field { display: grid; gap: 8px; }
 .refi-contact-field label { color: var(--refi-ink); font-size: 14px; font-weight: 700; }
-.refi-contact-field input, .refi-contact-field select, .refi-contact-field textarea { width: 100%; min-height: 50px; padding: 13px 14px; border: 1px solid var(--refi-border-strong); border-radius: 0; background: #fff; color: var(--refi-ink); font: inherit; }
+.refi-contact-field input, .refi-contact-field textarea { width: 100%; min-height: 50px; padding: 13px 14px; border: 1px solid var(--refi-border-strong); border-radius: 0; background: #fff; color: var(--refi-ink); font: inherit; }
 .refi-contact-field textarea { min-height: 150px; resize: vertical; }
-.refi-contact-field input:focus-visible, .refi-contact-field select:focus-visible, .refi-contact-field textarea:focus-visible { outline: 3px solid rgba(201,168,76,.45); outline-offset: 2px; border-color: var(--refi-blue-700); }
+.refi-contact-field input:focus-visible, .refi-contact-field textarea:focus-visible { outline: 3px solid rgba(201,168,76,.45); outline-offset: 2px; border-color: var(--refi-blue-700); }
 .refi-contact-form .refi-button { justify-self: start; border: 0; }
 .refi-contact-form .refi-button:disabled { cursor: wait; opacity: .7; }
 .refi-form-feedback { display: flex; align-items: flex-start; gap: 10px; padding: 14px; margin: 0; font-size: 14px; line-height: 1.5; }
@@ -435,7 +435,6 @@ img { max-width: 100%; }
 .refi-admin-field input[type="date"],
 .refi-admin-field input[type="datetime-local"],
 .refi-admin-field input[type="number"],
-.refi-admin-field select,
 .refi-admin-field textarea {
   width: 100%; padding: 11px 12px;
   border: 1px solid var(--refi-border-strong);
@@ -443,7 +442,7 @@ img { max-width: 100%; }
   font: inherit; font-size: 15px;
 }
 .refi-admin-field textarea { resize: vertical; line-height: 1.6; }
-.refi-admin-field input:focus, .refi-admin-field select:focus, .refi-admin-field textarea:focus {
+.refi-admin-field input:focus, .refi-admin-field textarea:focus {
   outline: 2px solid var(--refi-blue-600); outline-offset: 1px;
 }
 
