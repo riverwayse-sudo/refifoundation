@@ -1,7 +1,7 @@
 "use client";
 
 import { Grid3X3, RotateCcw } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildDeck, canRevealCard, clampPairs, isMatch, memoryScore, MEMORY_MIN_PAIRS, type MemoryCard } from "@/lib/games/memory-match";
 import { GameShell, Instructions, Overlay, type GameProps } from "./game-shell";
 import styles from "../play.module.css";
@@ -21,12 +21,23 @@ export function MemoryMatch({ onFinish, onStart, onRestart, elapsed }: GameProps
   const [matched, setMatched] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [phase, setPhase] = useState<Phase>("intro");
+  const mismatchTimerRef = useRef<number | null>(null);
 
   const totalPairs = useMemo(() => clampPairs(pairs), [pairs]);
   const score = useMemo(() => memoryScore(matched.length, moves, elapsed, totalPairs), [matched.length, moves, elapsed, totalPairs]);
 
+  const clearMismatchTimer = useCallback(() => {
+    if (mismatchTimerRef.current !== null) {
+      window.clearTimeout(mismatchTimerRef.current);
+      mismatchTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => clearMismatchTimer, [clearMismatchTimer]);
+
   const reset = useCallback(
     (nextPairs: number) => {
+      clearMismatchTimer();
       setPairs(nextPairs);
       setDeck(buildDeck(nextPairs));
       setFaceUp([]);
@@ -35,7 +46,7 @@ export function MemoryMatch({ onFinish, onStart, onRestart, elapsed }: GameProps
       setPhase("playing");
       onStart();
     },
-    [onStart],
+    [clearMismatchTimer, onStart],
   );
 
   const reveal = useCallback(
@@ -49,19 +60,24 @@ export function MemoryMatch({ onFinish, onStart, onRestart, elapsed }: GameProps
           setMatched(nextMatched);
           setFaceUp([]);
           if (nextMatched.length === totalPairs) {
+            clearMismatchTimer();
             setPhase("done");
             onFinish({ score: memoryScore(nextMatched.length, moves + 1, elapsed, totalPairs), durationMs: elapsed * 1000, completed: true });
           }
           return;
         }
         // Wrong pair: show both, then turn them back.
+        clearMismatchTimer();
         setFaceUp([faceUp[0], card.id]);
-        window.setTimeout(() => setFaceUp([]), 750);
+        mismatchTimerRef.current = window.setTimeout(() => {
+          mismatchTimerRef.current = null;
+          setFaceUp([]);
+        }, 750);
         return;
       }
       setFaceUp([card.id]);
     },
-    [phase, faceUp, matched, deck, totalPairs, onFinish, elapsed, moves],
+    [phase, faceUp, matched, deck, totalPairs, onFinish, elapsed, moves, clearMismatchTimer],
   );
 
   if (phase === "intro") {
