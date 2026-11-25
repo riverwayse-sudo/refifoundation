@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteFooter, SiteHeader } from "../../_components/site-chrome";
 import { GAMES } from "@/lib/games/catalog";
 import styles from "../../engagement.module.css";
@@ -25,6 +25,16 @@ export default function StartFundraiserPage() {
   const [goalNaira, setGoalNaira] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // A completed game can send visitors here with its slug. Read the query only
+  // after hydration, then preselect the matching game without trusting arbitrary
+  // query values.
+  useEffect(() => {
+    const requestedGame = new URLSearchParams(window.location.search).get("game");
+    if (requestedGame && GAMES.some((item) => item.slug === requestedGame)) {
+      setGame(requestedGame);
+    }
+  }, []);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -116,6 +126,11 @@ export default function StartFundraiserPage() {
                 ))}
               </select>
             </label>
+            {game && (
+              <p role="status" style={{ margin: 0, color: "var(--refi-ink-soft)" }}>
+                This campaign is linked to your selected game: {GAMES.find((item) => item.slug === game)?.title}.
+              </p>
+            )}
             <label className={styles.label} htmlFor="campaign-story">
               Why this campaign (optional)
               <textarea
