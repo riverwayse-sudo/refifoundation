@@ -46,6 +46,9 @@ jobs:
       - name: Verify shared navigation
         run: node --experimental-strip-types --test scripts/verify-navigation.mjs
 
+      - name: Verify dropdown design system
+        run: npm run verify:dropdowns
+
       - name: Build
         run: npm run build
 
