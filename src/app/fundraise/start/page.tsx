@@ -31,9 +31,13 @@ export default function StartFundraiserPage() {
   // query values.
   useEffect(() => {
     const requestedGame = new URLSearchParams(window.location.search).get("game");
-    if (requestedGame && GAMES.some((item) => item.slug === requestedGame)) {
-      setGame(requestedGame);
-    }
+    if (!requestedGame || !GAMES.some((item) => item.slug === requestedGame)) return;
+
+    // Defer the hydration-time URL handoff to the next task. This avoids a
+    // synchronous state update inside the effect while keeping query values
+    // restricted to published game slugs.
+    const timeoutId = window.setTimeout(() => setGame(requestedGame), 0);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   async function submit(event: React.FormEvent) {
