@@ -2,7 +2,7 @@
 
 import { Grid3X3, RotateCcw } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { buildDeck, clampPairs, isMatch, memoryScore, MEMORY_MIN_PAIRS, type MemoryCard } from "@/lib/games/memory-match";
+import { buildDeck, canRevealCard, clampPairs, isMatch, memoryScore, MEMORY_MIN_PAIRS, type MemoryCard } from "@/lib/games/memory-match";
 import { GameShell, Instructions, Overlay, type GameProps } from "./game-shell";
 import styles from "../play.module.css";
 
@@ -40,8 +40,7 @@ export function MemoryMatch({ onFinish, onStart, onRestart, elapsed }: GameProps
 
   const reveal = useCallback(
     (card: MemoryCard) => {
-      if (phase !== "playing") return;
-      if (faceUp.includes(card.id) || matched.includes(card.pairId)) return;
+      if (!canRevealCard(faceUp.length, faceUp.includes(card.id), matched.includes(card.pairId))) return;
       if (faceUp.length === 1) {
         const first = deck.find((c) => c.id === faceUp[0]);
         setMoves((m) => m + 1);
