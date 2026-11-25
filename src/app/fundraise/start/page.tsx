@@ -109,7 +109,7 @@ export default function StartFundraiserPage() {
             </label>
             <label className={styles.label} htmlFor="campaign-game">
               Game you are playing (optional)
-              <select id="campaign-game" className={styles.input} value={game} onChange={(event) => setGame(event.target.value)}>
+              <select id="campaign-game" value={game} onChange={(event) => setGame(event.target.value)}>
                 <option value="">No game chosen</option>
                 {GAMES.map((item) => (
                   <option key={item.slug} value={item.slug}>{item.title}</option>
