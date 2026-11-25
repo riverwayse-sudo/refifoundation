@@ -87,7 +87,7 @@ export default function LiveMatchCentre() {
           <h2 className="refi-serif">Live match updates</h2>
           <p>Premier League, UEFA Champions League and Nigerian league fixtures.</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "flex-start", maxWidth: "100%" }}>
           <div className="refi-match-refresh"><span className={feed.matches.length ? "refi-match-pulse" : "refi-match-pulse is-idle"} />{paused ? "Paused" : "Auto-refresh · 90 sec"}</div>
           <button type="button" className="refi-match-refresh" onClick={() => setPaused((current) => !current)} aria-pressed={paused}>{paused ? "Resume" : "Pause"}</button>
           <button type="button" className="refi-match-refresh" onClick={() => setReloadKey((key) => key + 1)}>Refresh now</button>
