@@ -40,7 +40,7 @@ export function MemoryMatch({ onFinish, onStart, onRestart, elapsed }: GameProps
 
   const reveal = useCallback(
     (card: MemoryCard) => {
-      if (!canRevealCard(faceUp.length, faceUp.includes(card.id), matched.includes(card.pairId))) return;
+      if (!canRevealCard(phase === "playing", faceUp.length, faceUp.includes(card.id), matched.includes(card.pairId))) return;
       if (faceUp.length === 1) {
         const first = deck.find((c) => c.id === faceUp[0]);
         setMoves((m) => m + 1);
