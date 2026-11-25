@@ -32,7 +32,7 @@ The public pages are cached with Next.js ISR. They read Supabase server-side whe
 Everything here runs at **zero recurring cost**. No paid tools, subscriptions or
 services are used, and none are required.
 
-The following feature routes are now included in the production deployment from `main`: `/contact`, `/matches`, `/play`, `/play/[game]`, `/leaderboard`, `/fundraise`, `/fundraise/start`, `/fundraise/[slug]` and `/admin`. PR #50 (dropdown and game-input safeguards) and PR #49 (game-to-fundraiser journey) are merged. These routes are **deployed, not all operational**: provider credentials and database migrations remain outstanding. CI passed for lint, type checks, CMS/RLS tests, build, sitemap, live-feed safeguards, donation integrity and game verification. The production deployment is `READY` on commit `12eb222`.
+The following feature routes are now included in the production deployment from `main`: `/contact`, `/matches`, `/play`, `/play/[game]`, `/leaderboard`, `/fundraise`, `/fundraise/start`, `/fundraise/[slug]` and `/admin`. PR #50 (dropdown and game-input safeguards) and PR #49 (game-to-fundraiser journey) are merged. These routes are **deployed, not all operational**: provider credentials and database migrations remain outstanding. CI passed for lint, type checks, CMS/RLS tests, build, sitemap, live-feed safeguards, donation integrity and game verification. The production deployment is marked ready on commit `12eb222`.
 
 ## 2. What is deliberately not live
 
