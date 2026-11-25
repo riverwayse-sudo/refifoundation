@@ -31,11 +31,11 @@ export function buildDeck(pairCount: number, random: () => number = Math.random)
 }
 
 /**
- * A board accepts a new reveal only while fewer than two cards are face up.
- * This locks input during the mismatch reveal delay.
+ * A reveal is valid only during active play and while fewer than two cards
+ * are visible. This also locks input during the mismatch reveal delay.
  */
-export function canRevealCard(faceUpCount: number, isFaceUp: boolean, isMatched: boolean): boolean {
-  return faceUpCount < 2 && !isFaceUp && !isMatched;
+export function canRevealCard(isPlaying: boolean, faceUpCount: number, isFaceUp: boolean, isMatched: boolean): boolean {
+  return isPlaying && faceUpCount < 2 && !isFaceUp && !isMatched;
 }
 
 export function clampPairs(pairCount: number): number {
