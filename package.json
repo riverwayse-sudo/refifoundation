@@ -12,6 +12,7 @@
     "verify:live-feed": "node scripts/verify-live-feed.mjs",
     "verify:donations": "node scripts/verify-donations.mjs",
     "verify:games": "node scripts/verify-games.mjs",
+    "verify:dropdowns": "node scripts/verify-dropdown-system.mjs",
     "verify:contact": "node --experimental-strip-types --test scripts/verify-contact.mjs",
     "test:cms": "node --experimental-strip-types --test \"tests/**/*.test.ts\"",
     "test:rls": "bash scripts/test-rls.sh",
