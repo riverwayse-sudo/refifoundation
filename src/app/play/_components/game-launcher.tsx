@@ -195,6 +195,9 @@ export function GameLauncher({ game }: { game: GameDefinition }) {
           <Link className={styles.ghost} style={{ background: "#fff", color: "var(--refi-blue-900)", borderColor: "var(--refi-border-strong)" }} href="/donate">
             <HeartHandshake size={16} aria-hidden="true" /> Support the Foundation
           </Link>
+          <Link className={styles.primary} href={`/fundraise/start?game=${encodeURIComponent(game.slug)}`}>
+            <HeartHandshake size={16} aria-hidden="true" /> Turn this challenge into a fundraiser
+          </Link>
         </div>
       )}
       {shared && (
