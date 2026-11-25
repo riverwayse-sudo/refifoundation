@@ -47,21 +47,19 @@ export function BrainBattle({ onFinish, onStart, onRestart }: GameProps) {
     [index, questions.length, finish],
   );
 
-  // Per-question countdown. Expiring counts as an unanswered question.
+  // Per-question countdown. Use one timeout per displayed second so the
+  // timeout callback advances the game outside a React state updater.
   useEffect(() => {
     if (phase !== "playing" || chosen !== null) return;
-    const id = window.setInterval(() => {
-      setSeconds((s) => {
-        if (s <= 1) {
-          window.clearInterval(id);
-          advance(correct);
-          return SECONDS_PER_QUESTION;
-        }
-        return s - 1;
-      });
+    const id = window.setTimeout(() => {
+      if (seconds <= 1) {
+        advance(correct);
+        return;
+      }
+      setSeconds(seconds - 1);
     }, 1000);
-    return () => window.clearInterval(id);
-  }, [phase, chosen, index, correct, advance]);
+    return () => window.clearTimeout(id);
+  }, [phase, chosen, index, seconds, correct, advance]);
 
   const start = useCallback(() => {
     setQuestions(pickQuestions(QUIZ_LENGTH));
