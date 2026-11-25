@@ -231,7 +231,7 @@ The four games are deployed at `/play` and `/play/[game]`. The game hub now link
 
 Score integrity now uses a server-issued HMAC session: `/api/games/session` signs the round start and `/api/scores` checks the token and server-measured duration. The score store also enforces one submission per session and game. This is a bounded integrity check, not a full anti-cheat system.
 
-The public leaderboard remains intentionally inactive until the dedicated REFI Supabase project is confirmed, migrations `0001_donations.sql`, `0002_game_scores.sql` and `0004_fundraisers.sql` are applied in order, and `SCORE_SESSION_SECRET` plus the required Supabase server credentials are configured. Until then, a game can run locally in the browser, but the server must not claim that a score was saved or publish rankings. Fundraising totals must count only successfully verified Paystack transactions.
+The public leaderboard remains intentionally inactive until the dedicated REFI Supabase project is confirmed, migrations `0001_donations.sql`, `0002_game_scores.sql`, `0003_cms_schema.sql` and `0004_fundraisers.sql` are applied in order, and `SCORE_SESSION_SECRET` plus the required Supabase server credentials are configured. Until then, a game can run locally in the browser, but the server must not claim that a score was saved or publish rankings. Fundraising totals must count only successfully verified Paystack transactions.
 
 ## 5. The logo
 
