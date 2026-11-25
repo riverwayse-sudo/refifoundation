@@ -30,6 +30,14 @@ export function buildDeck(pairCount: number, random: () => number = Math.random)
   return shuffle(cards, random);
 }
 
+/**
+ * A board accepts a new reveal only while fewer than two cards are face up.
+ * This locks input during the mismatch reveal delay.
+ */
+export function canRevealCard(faceUpCount: number, isFaceUp: boolean, isMatched: boolean): boolean {
+  return faceUpCount < 2 && !isFaceUp && !isMatched;
+}
+
 export function clampPairs(pairCount: number): number {
   if (!Number.isFinite(pairCount)) return MEMORY_MIN_PAIRS;
   return Math.max(MEMORY_MIN_PAIRS, Math.min(Math.floor(pairCount), MEMORY_MAX_PAIRS));
