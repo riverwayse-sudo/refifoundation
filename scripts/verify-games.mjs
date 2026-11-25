@@ -195,6 +195,8 @@ async function verifySite(origin) {
   check("hub links every game", titles.every((t) => hub.text.includes(t)), "all titles present");
   check("hub shows all four categories", ["Brain", "Puzzle", "Arcade", "Sports"].every((c) => hub.text.includes(c)), "categories present");
   check("hub states gameplay is free", /free/i.test(hub.text), "free stated");
+  check("hub links visitors to fundraiser discovery", /href="\\/fundraise"/.test(hub.text) && /Explore fundraisers/i.test(hub.text), "fundraiser hub linked");
+  check("hub links visitors to fundraiser creation", /href="\\/fundraise\\/start"/.test(hub.text) && /Start a fundraiser/i.test(hub.text), "campaign creation linked");
   check("hub does not claim a score is a donation", !/score[^.]{0,40}(is|equals) a donation/i.test(hub.text), "no false equivalence");
 
   // Every game route must be a real, playable page.
