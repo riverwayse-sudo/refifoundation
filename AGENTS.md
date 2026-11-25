@@ -139,7 +139,24 @@ Replaced the previous Decap/GitHub editor. `public/admin/` and the
   branches and verify CI first; do not merge the release branch into `main` or
   trigger a production deployment without approval.
 
-### Testing without adding a framework
+### Form controls and dropdowns
+
+All single-value native `<select>` controls use the shared design system in
+`src/styles/dropdowns.css`, imported once from `src/app/layout.tsx`. Keep
+dimensions, borders, chevrons, hover, focus, disabled and forced-colour states
+in that file. Do not add page-level or CSS-module selectors for `select`, and
+do not add local select classes that override the shared control. Keep native
+select semantics; do not replace a select with a custom JavaScript combobox
+unless a product requirement needs behaviour that the native control cannot
+provide. Run `npm run verify:dropdowns` after any form-control change; CI runs
+the same check.
+
+Game input rules are also part of the interface contract: Memory Match must not
+accept a third reveal while two cards are visible, and global game shortcuts
+must not override the native keyboard activation of buttons or form controls.
+Brain Battle timer transitions must occur outside React state updater callbacks.
+
+## Testing without adding a framework
 
 `npm run test:cms` uses Node 24's built-in test runner with native TypeScript
 support, so no test framework is installed. Node requires explicit file extensions
